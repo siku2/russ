@@ -5,6 +5,7 @@ use quote::{quote, quote_spanned, ToTokens};
 use std::fmt::{self, Display, Formatter};
 use syn::{
     braced,
+    ext::IdentExt,
     parse::{self, Parse, ParseStream},
     punctuated::Punctuated,
     token, Ident, Token,
@@ -32,10 +33,10 @@ impl Display for Property {
 impl Parse for Property {
     fn parse(input: ParseStream) -> parse::Result<Self> {
         let mut parts = Punctuated::new();
-        parts.push_value(input.parse()?);
+        parts.push_value(input.call(Ident::parse_any)?);
         while let Ok(punct) = input.parse() {
             parts.push_punct(punct);
-            parts.push_value(input.parse()?);
+            parts.push_value(input.call(Ident::parse_any)?);
         }
 
         Ok(Self(parts))

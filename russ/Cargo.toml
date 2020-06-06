@@ -7,6 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 proc-macro-hack = "0.5"
+russ-css = { path = "../russ-css" }
 russ-macro = { path = "../russ-macro" }
 wasm-bindgen = "0.2"
 

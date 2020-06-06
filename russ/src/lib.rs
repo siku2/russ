@@ -1,11 +1,10 @@
-mod bindings;
+pub mod bindings;
+pub mod css;
+mod styles;
 
 use proc_macro_hack::proc_macro_hack;
 #[proc_macro_hack]
 pub use russ_macro::static_css;
-
-use std::collections::HashSet;
-use std::fmt::{self, Formatter};
 
 /// A reference to a style sheet.
 /// When dropped, the style sheet is removed.
@@ -32,29 +31,3 @@ impl Drop for StyleSheetRef {
         assert!(removed, "style sheet was removed outside of russ");
     }
 }
-
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct RuleSet {
-    name: &'static str,
-    declaration_block: &'static str,
-}
-
-impl RuleSet {
-    pub const fn _new_from_macro(name: &'static str, declaration_block: &'static str) -> Self {
-        Self {
-            name,
-            declaration_block,
-        }
-    }
-
-    fn render(&self, formatter: &mut Formatter, selector: &str) -> fmt::Result {
-        write!(formatter, "{}{}", selector, self.declaration_block)
-    }
-}
-
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct Styles {
-    rules: HashSet<RuleSet>,
-}
-
-impl Styles {}
