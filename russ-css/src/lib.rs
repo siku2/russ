@@ -1,4 +1,4 @@
-pub use russ_css_macro::{CSSDeclaration, CSSValue, FromVariants};
+pub use russ_css_macro::{CSSDeclaration, CSSValue, FromVariants, VariantConstructors};
 use std::io::{self, Write};
 
 pub type WriteResult<T = ()> = io::Result<T>;

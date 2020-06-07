@@ -1,6 +1,7 @@
 mod args;
 mod css_value;
 mod from_variants;
+mod variant_constructors;
 
 use heck::KebabCase;
 use quote::quote;
@@ -38,4 +39,15 @@ pub fn derive_from_variants(input: proc_macro::TokenStream) -> proc_macro::Token
         Ok(tokens) => tokens,
         Err(err) => err.to_compile_error(),
     })
+}
+
+#[proc_macro_derive(VariantConstructors, attributes(constructor))]
+pub fn derive_variant_constructors(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    proc_macro::TokenStream::from(
+        match variant_constructors::generate_variant_constructors(input) {
+            Ok(tokens) => tokens,
+            Err(err) => err.to_compile_error(),
+        },
+    )
 }

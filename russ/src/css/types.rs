@@ -1,13 +1,14 @@
 // https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Types
 
-use super::{CSSWriter, FromVariants, WriteResult, WriteValue};
+use super::{CSSWriter, WriteResult, WriteValue};
 use lazy_static::lazy_static;
 use regex::Regex;
 use russ_css::CSSValue;
+use russ_css::{FromVariants, VariantConstructors};
 use std::io::Write;
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/angle
-#[derive(Clone, Copy, Debug, CSSValue)]
+#[derive(Clone, Copy, Debug, CSSValue, VariantConstructors)]
 pub enum Angle {
     #[dimension]
     Deg(Number),
@@ -112,16 +113,18 @@ pub enum BlendMode {
 pub enum Color {
     // #[value(prefix = "#")]
     Hex(Integer),
+    // #[function]
     Rgb {
         r: NumberPercentage,
         g: NumberPercentage,
         b: NumberPercentage,
         a: Option<NumberPercentage>,
     },
+    // #[function]
     Hsl {
-        h: NumberPercentage,
-        s: NumberPercentage,
-        l: NumberPercentage,
+        h: Angle,
+        s: Percentage,
+        l: Percentage,
         a: Option<NumberPercentage>,
     },
 
@@ -129,6 +132,33 @@ pub enum Color {
     Transparent,
     // #[keyword]
     CurrentColor,
+}
+impl Color {
+    pub fn hex(hex: Integer) -> Self {
+        Self::Hex(hex)
+    }
+
+    pub fn rgb(
+        r: impl Into<NumberPercentage>,
+        g: impl Into<NumberPercentage>,
+        b: impl Into<NumberPercentage>,
+    ) -> Self {
+        Self::Rgb {
+            r: r.into(),
+            g: g.into(),
+            b: b.into(),
+            a: None,
+        }
+    }
+
+    pub fn hsl(h: impl Into<Angle>, s: impl Into<Percentage>, l: impl Into<Percentage>) -> Self {
+        Self::Hsl {
+            h: h.into(),
+            s: s.into(),
+            l: l.into(),
+            a: None,
+        }
+    }
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/custom-ident
@@ -186,7 +216,7 @@ where
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/frequency
-#[derive(Clone, Copy, Debug, CSSValue)]
+#[derive(Clone, Copy, Debug, CSSValue, VariantConstructors)]
 pub enum Frequency {
     #[dimension(unit = "Hz")]
     Hz(Number),
@@ -212,15 +242,15 @@ pub enum Gradient {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/image
-// #[derive(Clone, Debug, CSSValue, FromVariants)]
+#[derive(Clone, Debug, CSSValue, FromVariants)]
 pub enum Image {
     Url(Url),
-    Gradient(Gradient),
+    // Gradient(Gradient),
     // TODO
-    Element(),
-    Image(),
-    CrossFade(),
-    ImageSet(),
+    // Element(),
+    // Image(),
+    // CrossFade(),
+    // ImageSet(),
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/integer
@@ -241,7 +271,7 @@ where
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/length
-#[derive(Clone, Copy, Debug, CSSValue)]
+#[derive(Clone, Copy, Debug, CSSValue, VariantConstructors)]
 pub enum Length {
     #[dimension]
     Cap(Number),
@@ -281,6 +311,7 @@ pub enum Length {
     Mm(Number),
     #[dimension]
     Q(Number),
+    #[constructor(name = "inches")]
     #[dimension]
     In(Number),
     #[dimension]
@@ -299,8 +330,6 @@ pub enum LengthPercentage {
     Length(Length),
     Percentage(Percentage),
 }
-
-// TODO derive fn a(Into<T1>, Into<T2>) -> Self for enums
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/number
 #[derive(Clone, Copy, Debug)]
@@ -330,6 +359,14 @@ pub enum NumberPercentage {
 #[derive(Clone, Copy, Debug, CSSValue)]
 #[dimension(unit = "%")]
 pub struct Percentage(pub Number);
+impl<T> From<T> for Percentage
+where
+    T: Into<Number>,
+{
+    fn from(v: T) -> Self {
+        Self(v.into())
+    }
+}
 
 #[derive(Clone, Copy, Debug, CSSValue)]
 pub enum PositionHorizontalAnchor {
@@ -403,41 +440,40 @@ pub struct Position {
     vertical: Option<PositionVertical>,
 }
 impl Position {
+    fn new(mut horizontal: Option<PositionHorizontal>, vertical: Option<PositionVertical>) -> Self {
+        // `x(None) y(5rem)` would generate `5rem` which would be interpreted as `x(5rem) y(center)`.
+        // This check makes sure that we generate `x(center) y(5rem)` instead.
+        if horizontal.is_none() && matches!(&vertical, Some(PositionVertical::Offset(None, _))) {
+            horizontal = Some(PositionHorizontal::Center);
+        }
+        Self {
+            horizontal,
+            vertical,
+        }
+    }
+
     pub fn center() -> Self {
         Self::x(PositionHorizontal::Center)
     }
     pub fn x(horizontal: impl Into<PositionHorizontal>) -> Self {
-        Self {
-            horizontal: Some(horizontal.into()),
-            vertical: None,
-        }
+        Self::new(Some(horizontal.into()), None)
     }
     pub fn y(vertical: impl Into<PositionVertical>) -> Self {
-        // TODO this can create the wrong CSS when using center or an offset without an anchor
-        Self {
-            horizontal: None,
-            vertical: Some(vertical.into()),
-        }
+        Self::new(None, Some(vertical.into()))
     }
     pub fn xy(
         horizontal: impl Into<PositionHorizontal>,
         vertical: impl Into<PositionVertical>,
     ) -> Self {
-        Self {
-            horizontal: Some(horizontal.into()),
-            vertical: Some(vertical.into()),
-        }
+        Self::new(Some(horizontal.into()), Some(vertical.into()))
     }
+
     pub fn xy_option(
         horizontal: Option<PositionHorizontal>,
         vertical: Option<PositionVertical>,
     ) -> Option<Self> {
-        // TODO extra checks needed like for y()
         if horizontal.is_some() || vertical.is_some() {
-            Some(Self {
-                horizontal,
-                vertical,
-            })
+            Some(Self::new(horizontal, vertical))
         } else {
             None
         }
@@ -447,7 +483,6 @@ impl Position {
 // https://developer.mozilla.org/en-US/docs/Web/CSS/ratio
 #[derive(Clone, Copy, Debug, CSSValue)]
 #[value(separator = "/")]
-// TODO strictly positive
 pub struct Ratio(pub Integer, pub Integer);
 impl Ratio {
     pub fn width(&self) -> Integer {
@@ -463,7 +498,7 @@ impl Ratio {
 // TODO shape-box
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/time
-#[derive(Clone, Copy, Debug, CSSValue)]
+#[derive(Clone, Copy, Debug, CSSValue, VariantConstructors)]
 pub enum Time {
     #[dimension]
     S(Number),

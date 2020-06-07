@@ -40,8 +40,8 @@ fn position() {
     );
     assert_eq!(
         render(Position::xy(
-            (PositionHorizontalAnchor::Right, Length::Px((-6).into())),
-            (PositionVerticalAnchor::Bottom, Length::VMin(12.into())),
+            (PositionHorizontalAnchor::Right, Length::px(-6)),
+            (PositionVerticalAnchor::Bottom, Length::v_min(12)),
         )),
         "right -6px bottom 12vmin"
     );
@@ -51,7 +51,7 @@ fn position() {
         "10% 20%"
     );
     assert_eq!(
-        render(Position::xy(Length::Rem(8.into()), Length::Px(14.into()),)),
+        render(Position::xy(Length::rem(8), Length::px(14),)),
         "8rem 14px"
     );
 }

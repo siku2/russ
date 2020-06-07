@@ -1,0 +1,98 @@
+use crate::args::{self, Args, FromArgs};
+use heck::SnakeCase;
+use proc_macro2::TokenStream;
+use quote::{quote, ToTokens};
+use syn::{spanned::Spanned, Attribute, Data, DeriveInput, Fields, Ident, LitStr, Variant};
+
+struct VariantConstructorAttr {
+    attr: Attribute,
+    name: Option<LitStr>,
+}
+impl FromArgs for VariantConstructorAttr {
+    fn attr_path() -> &'static str {
+        "constructor"
+    }
+    fn from_args(attr: Attribute, args: &Args) -> syn::Result<Self> {
+        Ok(Self {
+            attr,
+            name: args.get_kwarg_str("name").transpose()?.cloned(),
+        })
+    }
+}
+impl ToTokens for VariantConstructorAttr {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.attr.to_tokens(tokens)
+    }
+}
+
+fn generate_variant_constructor_fn(variant: &Variant) -> syn::Result<TokenStream> {
+    let arg: Option<VariantConstructorAttr> =
+        args::parse_single_from_attrs(&variant.attrs).transpose()?;
+
+    let variant_ident_str = arg
+        .and_then(|arg| arg.name)
+        .map(|name| name.value())
+        .unwrap_or_else(|| variant.ident.to_string());
+    let variant_ident: Ident = syn::parse_str(&variant_ident_str)?;
+    let fn_ident = Ident::new(
+        &variant_ident.to_string().to_snake_case(),
+        variant_ident.span(),
+    );
+
+    let is_named = matches!(variant.fields, Fields::Named(_));
+
+    let mut params = Vec::new();
+    let mut values = Vec::new();
+    for (i, field) in variant.fields.iter().enumerate() {
+        let param_ident_str = field
+            .ident
+            .as_ref()
+            .map(|i| i.to_string())
+            .unwrap_or_else(|| format!("v{}", i));
+        syn::parse_str::<Ident>(&param_ident_str)?;
+
+        let param_ident = Ident::new(&param_ident_str, field.span());
+
+        let ty = &field.ty;
+        params.push(quote! { #param_ident: impl Into<#ty> });
+
+        values.push(if is_named {
+            quote! { #param_ident: #param_ident.into() }
+        } else {
+            quote! { #param_ident.into() }
+        });
+    }
+
+    let variant_body = if is_named {
+        quote! { {#(#values),*} }
+    } else {
+        quote! { (#(#values),*) }
+    };
+
+    Ok(quote! {
+        pub fn #fn_ident(#(#params),*) -> Self {
+            Self::#variant_ident#variant_body
+        }
+    })
+}
+
+pub fn generate_variant_constructors(input: DeriveInput) -> syn::Result<TokenStream> {
+    let type_ident = &input.ident;
+    Ok(match input.data {
+        Data::Enum(data) => {
+            let functions = data
+                .variants
+                .iter()
+                .filter(|variant| !matches!(variant.fields, Fields::Unit))
+                .map(|variant| generate_variant_constructor_fn(variant))
+                .collect::<Result<Vec<_>, _>>()?;
+
+            quote! {
+                impl #type_ident {
+                    #(#functions)*
+                }
+            }
+        }
+        _ => return Err(syn::Error::new_spanned(input, "only enums are supported")),
+    })
+}
