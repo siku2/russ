@@ -1,7 +1,7 @@
-pub use russ_css_macro::{CSSDeclaration, CSSValue};
+pub use russ_css_macro::{CSSDeclaration, CSSValue, FromVariants};
 use std::io::{self, Write};
 
-pub type WriteResult = io::Result<()>;
+pub type WriteResult<T = ()> = io::Result<T>;
 
 pub struct CSSWriter<'a> {
     buf: &'a mut (dyn Write + 'a),
@@ -57,5 +57,31 @@ impl DeclarationBlock {
             f.write_char(';')?;
         }
         f.write_char('}')
+    }
+}
+
+pub trait MaybeWriteValue {
+    fn maybe_write_value(&self, f: &mut CSSWriter) -> WriteResult<bool>;
+}
+
+impl<T> MaybeWriteValue for T
+where
+    T: WriteValue,
+{
+    fn maybe_write_value(&self, f: &mut CSSWriter) -> WriteResult<bool> {
+        self.write_value(f).map(|_| true)
+    }
+}
+
+impl<T> MaybeWriteValue for Option<T>
+where
+    T: MaybeWriteValue,
+{
+    fn maybe_write_value(&self, f: &mut CSSWriter) -> WriteResult<bool> {
+        if let Some(v) = self {
+            v.maybe_write_value(f)
+        } else {
+            Ok(false)
+        }
     }
 }

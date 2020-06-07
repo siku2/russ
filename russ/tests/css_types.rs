@@ -20,9 +20,51 @@ fn number() {
 }
 
 #[test]
+fn position() {
+    assert_eq!(render(Position::center()), "center");
+    assert_eq!(render(Position::x(PositionHorizontalAnchor::Left)), "left");
+    assert_eq!(
+        render(Position::xy(
+            PositionHorizontal::Center,
+            PositionVerticalAnchor::Top
+        )),
+        "center top"
+    );
+
+    assert_eq!(
+        render(Position::xy(
+            PositionHorizontalAnchor::Right,
+            Percentage(8.5.into()),
+        )),
+        "right 8.5%"
+    );
+    assert_eq!(
+        render(Position::xy(
+            (PositionHorizontalAnchor::Right, Length::Px((-6).into())),
+            (PositionVerticalAnchor::Bottom, Length::VMin(12.into())),
+        )),
+        "right -6px bottom 12vmin"
+    );
+
+    assert_eq!(
+        render(Position::xy(Percentage(10.into()), Percentage(20.into()),)),
+        "10% 20%"
+    );
+    assert_eq!(
+        render(Position::xy(Length::Rem(8.into()), Length::Px(14.into()),)),
+        "8rem 14px"
+    );
+}
+
+#[test]
+fn ratio() {
+    assert_eq!(render(Ratio(16.into(), 9.into())), "16/9");
+}
+
+#[test]
 fn string() {
     assert_eq!(render(CSSString::from("hello world")), "\"hello world\"");
-    assert_eq!(render(CSSString::from(r#" "' "#)), r#" \"' "#);
+    assert_eq!(render(CSSString::from(r#" "'" "#)), r#"" \"'\" ""#);
 }
 
 #[test]

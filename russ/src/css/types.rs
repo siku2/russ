@@ -1,11 +1,13 @@
 // https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Types
 
-use super::{CSSWriter, WriteResult, WriteValue};
+use super::{CSSWriter, FromVariants, WriteResult, WriteValue};
+use lazy_static::lazy_static;
+use regex::Regex;
 use russ_css::CSSValue;
 use std::io::Write;
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/angle
-#[derive(Clone, Copy, CSSValue)]
+#[derive(Clone, Copy, Debug, CSSValue)]
 pub enum Angle {
     #[dimension]
     Deg(Number),
@@ -21,20 +23,23 @@ pub enum Angle {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/angle-percentage
-#[derive(Clone, Copy, CSSValue)]
+#[derive(Clone, Copy, Debug, CSSValue, FromVariants)]
 pub enum AnglePercentage {
+    #[from_variant(into)]
     Angle(Angle),
     Percentage(Percentage),
 }
 
-#[derive(Clone, Copy, CSSValue)]
+#[derive(Clone, Copy, Debug, CSSValue, FromVariants)]
 pub enum BasicShapeArg {
+    #[from_variant(into)]
     Length(Length),
     Percentage(Percentage),
 }
 
-#[derive(Clone, Copy, CSSValue)]
+#[derive(Clone, Copy, Debug, CSSValue, FromVariants)]
 pub enum BasicShapeRadius {
+    #[from_variant(into)]
     Length(Length),
     Percentage(Percentage),
 
@@ -45,7 +50,7 @@ pub enum BasicShapeRadius {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/basic-shape
-// #[derive(CSSValue)]
+// #[derive(Clone, Debug, CSSValue)]
 pub enum BasicShape {
     Inset(
         BasicShapeArg,
@@ -66,7 +71,7 @@ pub enum BasicShape {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/blend-mode
-#[derive(Clone, Copy, CSSValue)]
+#[derive(Clone, Copy, Debug, CSSValue)]
 pub enum BlendMode {
     #[keyword]
     Normal,
@@ -103,8 +108,9 @@ pub enum BlendMode {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value
-// #[derive(CSSValue)]
+// #[derive(Clone, Debug, CSSValue)]
 pub enum Color {
+    // #[value(prefix = "#")]
     Hex(Integer),
     Rgb {
         r: NumberPercentage,
@@ -126,15 +132,19 @@ pub enum Color {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/custom-ident
-#[derive(CSSValue)]
+#[derive(Clone, Debug, CSSValue)]
 pub struct CustomIdent(CSSString);
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/string
+#[derive(Clone, Debug)]
 pub struct CSSString(String);
 impl WriteValue for CSSString {
     fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
-        // TODO escape " inside of string, maybe do this when creating the string instead?
-        write!(f, r#""{}""#, self.0)
+        lazy_static! {
+            static ref RE: Regex = Regex::new("\"").unwrap();
+        }
+
+        write!(f, "\"{}\"", RE.replace_all(&self.0, "\\\""))
     }
 }
 impl<T> From<T> for CSSString
@@ -147,7 +157,7 @@ where
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/filter-function
-// #[derive(CSSValue)]
+// #[derive(Clone, Debug, CSSValue)]
 pub enum FilterFunction {
     // TODO
     Blur(),
@@ -163,12 +173,20 @@ pub enum FilterFunction {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/flex_value
-#[derive(Clone, Copy, CSSValue)]
+#[derive(Clone, Copy, Debug, CSSValue)]
 #[dimension(unit = "fr")]
-pub struct Flex(Number);
+pub struct Flex(pub Number);
+impl<T> From<T> for Flex
+where
+    T: Into<Number>,
+{
+    fn from(v: T) -> Self {
+        Self(v.into())
+    }
+}
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/frequency
-#[derive(Clone, Copy, CSSValue)]
+#[derive(Clone, Copy, Debug, CSSValue)]
 pub enum Frequency {
     #[dimension(unit = "Hz")]
     Hz(Number),
@@ -177,14 +195,15 @@ pub enum Frequency {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/frequency-percentage
-#[derive(Clone, Copy, CSSValue)]
+#[derive(Clone, Copy, Debug, CSSValue, FromVariants)]
 pub enum FrequencyPercentage {
+    #[from_variant(into)]
     Frequency(Frequency),
     Percentage(Percentage),
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/gradient
-// #[derive(CSSValue)]
+// #[derive(Clone, Debug, CSSValue)]
 pub enum Gradient {
     // TODO
     Linear(),
@@ -193,7 +212,7 @@ pub enum Gradient {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/image
-// #[derive(CSSValue)]
+// #[derive(Clone, Debug, CSSValue, FromVariants)]
 pub enum Image {
     Url(Url),
     Gradient(Gradient),
@@ -205,7 +224,7 @@ pub enum Image {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/integer
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Integer(i32);
 impl WriteValue for Integer {
     fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
@@ -222,7 +241,7 @@ where
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/length
-#[derive(Clone, Copy, CSSValue)]
+#[derive(Clone, Copy, Debug, CSSValue)]
 pub enum Length {
     #[dimension]
     Cap(Number),
@@ -274,14 +293,17 @@ pub enum Length {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/length-percentage
-#[derive(Clone, Copy, CSSValue)]
+#[derive(Clone, Copy, Debug, CSSValue, FromVariants)]
 pub enum LengthPercentage {
+    #[from_variant(into)]
     Length(Length),
     Percentage(Percentage),
 }
 
+// TODO derive fn a(Into<T1>, Into<T2>) -> Self for enums
+
 // https://developer.mozilla.org/en-US/docs/Web/CSS/number
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Number(f64);
 impl WriteValue for Number {
     fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
@@ -297,58 +319,151 @@ where
     }
 }
 
-#[derive(Clone, Copy, CSSValue)]
+#[derive(Clone, Copy, Debug, CSSValue, FromVariants)]
 pub enum NumberPercentage {
+    #[from_variant(into)]
     Number(Number),
     Percentage(Percentage),
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/percentage
-#[derive(Clone, Copy, CSSValue)]
+#[derive(Clone, Copy, Debug, CSSValue)]
 #[dimension(unit = "%")]
-pub struct Percentage(Number);
+pub struct Percentage(pub Number);
 
-#[derive(Clone, Copy, CSSValue)]
-pub enum PositionHorizontalKeyword {
+#[derive(Clone, Copy, Debug, CSSValue)]
+pub enum PositionHorizontalAnchor {
     #[keyword]
     Left,
     #[keyword]
-    Center,
-    #[keyword]
     Right,
 }
+#[derive(Clone, Copy, Debug, CSSValue, FromVariants)]
+pub enum PositionHorizontal {
+    Anchor(PositionHorizontalAnchor),
+    #[value]
+    Offset(Option<PositionHorizontalAnchor>, LengthPercentage),
+    #[keyword]
+    Center,
+}
+impl<T> From<T> for PositionHorizontal
+where
+    T: Into<LengthPercentage>,
+{
+    fn from(v: T) -> Self {
+        Self::Offset(None, v.into())
+    }
+}
+impl<T> From<(PositionHorizontalAnchor, T)> for PositionHorizontal
+where
+    T: Into<LengthPercentage>,
+{
+    fn from((anchor, offset): (PositionHorizontalAnchor, T)) -> Self {
+        Self::Offset(Some(anchor), offset.into())
+    }
+}
 
-#[derive(Clone, Copy, CSSValue)]
-pub enum PositionVerticalKeyword {
+#[derive(Clone, Copy, Debug, CSSValue)]
+pub enum PositionVerticalAnchor {
     #[keyword]
     Top,
     #[keyword]
-    Center,
-    #[keyword]
     Bottom,
+}
+#[derive(Clone, Copy, Debug, CSSValue, FromVariants)]
+pub enum PositionVertical {
+    Anchor(PositionVerticalAnchor),
+    #[value]
+    Offset(Option<PositionVerticalAnchor>, LengthPercentage),
+    #[keyword]
+    Center,
+}
+impl<T> From<T> for PositionVertical
+where
+    T: Into<LengthPercentage>,
+{
+    fn from(v: T) -> Self {
+        Self::Offset(None, v.into())
+    }
+}
+impl<T> From<(PositionVerticalAnchor, T)> for PositionVertical
+where
+    T: Into<LengthPercentage>,
+{
+    fn from((anchor, offset): (PositionVerticalAnchor, T)) -> Self {
+        Self::Offset(Some(anchor), offset.into())
+    }
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/position_value
-#[derive(CSSValue)]
+#[derive(Clone, Debug, CSSValue)]
+#[value]
 pub struct Position {
-    // TODO "center" cannot be used for 4 values
-    horizontal_anchor: Option<PositionHorizontalKeyword>,
-    horizontal_offset: Option<LengthPercentage>,
-    vertical_anchor: Option<PositionVerticalKeyword>,
-    vertical_offset: Option<LengthPercentage>,
+    horizontal: Option<PositionHorizontal>,
+    vertical: Option<PositionVertical>,
+}
+impl Position {
+    pub fn center() -> Self {
+        Self::x(PositionHorizontal::Center)
+    }
+    pub fn x(horizontal: impl Into<PositionHorizontal>) -> Self {
+        Self {
+            horizontal: Some(horizontal.into()),
+            vertical: None,
+        }
+    }
+    pub fn y(vertical: impl Into<PositionVertical>) -> Self {
+        // TODO this can create the wrong CSS when using center or an offset without an anchor
+        Self {
+            horizontal: None,
+            vertical: Some(vertical.into()),
+        }
+    }
+    pub fn xy(
+        horizontal: impl Into<PositionHorizontal>,
+        vertical: impl Into<PositionVertical>,
+    ) -> Self {
+        Self {
+            horizontal: Some(horizontal.into()),
+            vertical: Some(vertical.into()),
+        }
+    }
+    pub fn xy_option(
+        horizontal: Option<PositionHorizontal>,
+        vertical: Option<PositionVertical>,
+    ) -> Option<Self> {
+        // TODO extra checks needed like for y()
+        if horizontal.is_some() || vertical.is_some() {
+            Some(Self {
+                horizontal,
+                vertical,
+            })
+        } else {
+            None
+        }
+    }
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/ratio
-#[derive(Clone, Copy, CSSValue)]
-// TODO join by /
-#[join("/")]
-pub struct Ratio(Integer, Integer);
+#[derive(Clone, Copy, Debug, CSSValue)]
+#[value(separator = "/")]
+// TODO strictly positive
+pub struct Ratio(pub Integer, pub Integer);
+impl Ratio {
+    pub fn width(&self) -> Integer {
+        self.0
+    }
+
+    pub fn height(&self) -> Integer {
+        self.0
+    }
+}
 
 // TODO resolution
 // TODO shape-box
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/time
-#[derive(Clone, Copy, CSSValue)]
+#[derive(Clone, Copy, Debug, CSSValue)]
 pub enum Time {
     #[dimension]
     S(Number),
@@ -357,8 +472,9 @@ pub enum Time {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/time-percentage
-#[derive(Clone, Copy, CSSValue)]
+#[derive(Clone, Copy, Debug, CSSValue, FromVariants)]
 pub enum TimePercentage {
+    #[from_variant(into)]
     Time(Time),
     Percentage(Percentage),
 }
@@ -366,7 +482,7 @@ pub enum TimePercentage {
 // TODO timing-function
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function
-// #[derive(CSSValue)]
+// #[derive(Clone, Debug, CSSValue)]
 pub enum TransformFunction {
     Matrix(),
     Matrix3d(),
@@ -397,5 +513,5 @@ pub enum TransformFunction {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/url
-#[derive(CSSValue)]
-pub struct Url(CSSString);
+#[derive(Clone, Debug, CSSValue)]
+pub struct Url(pub CSSString);

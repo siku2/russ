@@ -136,3 +136,76 @@ impl Parse for Args {
         input.call(Punctuated::parse_terminated).map(Self)
     }
 }
+
+pub trait ParseAttr
+where
+    Self: Sized,
+{
+    fn parse_attr(attr: &Attribute) -> Option<syn::Result<Self>>;
+}
+
+pub trait FromArgs
+where
+    Self: Sized,
+{
+    fn attr_path() -> &'static str;
+    fn from_args(attr: Attribute, args: &Args) -> syn::Result<Self>;
+}
+impl<T> ParseAttr for T
+where
+    T: FromArgs,
+{
+    fn parse_attr(attr: &Attribute) -> Option<syn::Result<Self>> {
+        if attr.path.is_ident(Self::attr_path()) {
+            Some(Args::from_attribute(attr).and_then(|args| Self::from_args(attr.clone(), &args)))
+        } else {
+            None
+        }
+    }
+}
+
+pub fn parse_first_from_attrs<'a, T, IT>(attrs: IT) -> Option<syn::Result<T>>
+where
+    T: ParseAttr,
+    IT: IntoIterator<Item = &'a Attribute>,
+{
+    attrs.into_iter().flat_map(T::parse_attr).next()
+}
+
+pub fn parse_single_from_attrs<'a, T, IT>(attrs: IT) -> Option<syn::Result<T>>
+where
+    T: ParseAttr + ToTokens,
+    IT: IntoIterator<Item = &'a Attribute>,
+{
+    let mut attrs_iter = attrs.into_iter();
+    let first = match parse_first_from_attrs(&mut attrs_iter) {
+        Some(Ok(v)) => v,
+        v => return v,
+    };
+
+    // check if there's another attribute
+    match parse_first_from_attrs::<T, _>(&mut attrs_iter) {
+        None => {}
+        Some(Ok(attr)) => {
+            return Some(Err(syn::Error::new_spanned(
+                attr,
+                "must only specify a single attribute",
+            )))
+        }
+        Some(Err(err)) => return Some(Err(err)),
+    }
+
+    Some(Ok(first))
+}
+
+pub fn expect_no_attrs<'a, T, IT>(attrs: IT) -> syn::Result<()>
+where
+    T: ParseAttr + ToTokens,
+    IT: IntoIterator<Item = &'a Attribute>,
+{
+    match parse_first_from_attrs::<T, IT>(attrs) {
+        Some(Ok(attr)) => Err(syn::Error::new_spanned(attr, "attribute not allowed here")),
+        Some(Err(err)) => Err(err),
+        None => Ok(()),
+    }
+}
