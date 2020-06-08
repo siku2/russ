@@ -161,9 +161,11 @@ impl Color {
     }
 }
 
+
+// TODO implement custom-ident as a basic type
 // https://developer.mozilla.org/en-US/docs/Web/CSS/custom-ident
-#[derive(Clone, Debug, CSSValue)]
-pub struct CustomIdent(CSSString);
+#[derive(Clone, Debug)]
+pub struct CustomIdent(String);
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/string
 #[derive(Clone, Debug)]
@@ -309,7 +311,7 @@ pub enum Length {
     Cm(Number),
     #[dimension]
     Mm(Number),
-    #[dimension]
+    #[dimension(unit = "Q")]
     Q(Number),
     #[constructor(name = "inches")]
     #[dimension]
@@ -494,7 +496,17 @@ impl Ratio {
     }
 }
 
-// TODO resolution
+// https://developer.mozilla.org/en-US/docs/Web/CSS/resolution
+#[derive(Clone, Copy, Debug, CSSValue, VariantConstructors)]
+pub enum Resolution {
+    #[dimension]
+    Dpi(Number),
+    #[dimension]
+    Dpcm(Number),
+    #[dimension]
+    Dppx(Number),
+}
+
 // TODO shape-box
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/time
