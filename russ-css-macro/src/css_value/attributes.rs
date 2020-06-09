@@ -71,7 +71,9 @@ impl ToTokens for KeywordAttr {
 
 pub struct ValueAttr {
     attr: Attribute,
+    pub prefix: Option<LitStr>,
     pub separator: Option<LitStr>,
+    pub write_fn: Option<LitStr>,
 }
 impl FromArgs for ValueAttr {
     fn attr_path() -> &'static str {
@@ -80,7 +82,9 @@ impl FromArgs for ValueAttr {
     fn from_args(attr: Attribute, args: &Args) -> syn::Result<Self> {
         Ok(Self {
             attr,
+            prefix: args.get_kwarg_str("prefix").transpose()?.cloned(),
             separator: args.get_kwarg_str("separator").transpose()?.cloned(),
+            write_fn: args.get_kwarg_str("write_fn").transpose()?.cloned(),
         })
     }
 }

@@ -301,7 +301,7 @@ impl Color {
         }
     }
 
-    fn write_hex(f: &mut CSSWriter, hex: Integer) -> WriteResult {
+    fn write_hex(f: &mut CSSWriter, hex: &Integer) -> WriteResult {
         write!(f, "{:X}", hex.0)
     }
 }

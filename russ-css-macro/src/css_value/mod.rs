@@ -5,7 +5,7 @@ use attributes::CSSValueAttr;
 use heck::KebabCase;
 use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned, ToTokens};
-use syn::{spanned::Spanned, Data, DeriveInput, Fields, Ident, LitStr, Token};
+use syn::{spanned::Spanned, Data, DeriveInput, ExprPath, Fields, Ident, LitStr};
 
 fn is_fields_single_unnamed(fields: &Fields) -> bool {
     match fields {
@@ -152,23 +152,33 @@ fn generate_write_for_fields_tokens(
                 quote! { f.write_str(#value_str) }
             }
             CSSValueAttr::Value(value) => {
-                if idents.is_empty() {
-                    return Err(syn::Error::new_spanned(
-                        container_ident,
-                        "value must have at least one field",
-                    ));
-                }
+                let write_prefix = value.prefix.map(|prefix| quote! { f.write_str(#prefix)?; });
+                let write_value = if let Some(write_fn) = value.write_fn {
+                    let fn_path = syn::parse_str::<ExprPath>(&write_fn.value())?;
+                    quote! {
+                        #fn_path(f, #(#idents),*)?;
+                    }
+                } else {
+                    if idents.is_empty() {
+                        return Err(syn::Error::new_spanned(
+                            container_ident,
+                            "value must have at least one field",
+                        ));
+                    }
 
-                let separator_str = value
-                    .separator
-                    .as_ref()
-                    .map(LitStr::value)
-                    .unwrap_or(String::from(" "));
+                    let separator_str = value
+                        .separator
+                        .as_ref()
+                        .map(LitStr::value)
+                        .unwrap_or(String::from(" "));
 
-                let write_values = gen_join_maybe_writes(idents, separator_str);
+                    gen_join_maybe_writes(idents, separator_str)
+                };
+
                 quote! {
                     {
-                        #write_values
+                        #write_prefix
+                        #write_value
                         Ok(())
                     }
                 }

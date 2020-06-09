@@ -19,7 +19,7 @@ fn calc() {
 
 #[test]
 fn color() {
-    // assert_eq!(render(Color::hex(0xff0099)), "#FF0099");
+    assert_eq!(render(Color::hex(0xff0099)), "#FF0099");
 
     assert_eq!(render(Color::rgb(255, 0, 153)), "rgb(255,0,153)");
     assert_eq!(
