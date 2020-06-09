@@ -3,9 +3,8 @@
 use super::{CSSWriter, WriteResult, WriteValue};
 use lazy_static::lazy_static;
 use regex::Regex;
-use russ_css::CSSValue;
-use russ_css::{FromVariants, VariantConstructors};
-use std::io::Write;
+use russ_css::{CSSValue, FromVariants, VariantConstructors};
+use std::{fmt::Debug, io::Write};
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/angle
 #[derive(Clone, Copy, Debug, CSSValue, VariantConstructors)]
@@ -108,19 +107,135 @@ pub enum BlendMode {
     Luminosity,
 }
 
+// https://developer.mozilla.org/en-US/docs/Web/CSS/calc
+#[derive(Clone, Debug, CSSValue)]
+#[function]
+pub struct Calc(CalcSum);
+impl Calc {
+    pub fn unary(value: impl Into<CalcSum>) -> Self {
+        Self(value.into())
+    }
+
+    fn bin_sum(a: impl Into<CalcProduct>, b: CalcSumPart) -> Self {
+        Self::unary(CalcSum::binary(a, b))
+    }
+    pub fn bin_add(a: impl Into<CalcProduct>, b: impl Into<CalcProduct>) -> Self {
+        Self::bin_sum(a, CalcSumPart::Add(b.into()))
+    }
+    pub fn bin_sub(a: impl Into<CalcProduct>, b: impl Into<CalcProduct>) -> Self {
+        Self::bin_sum(a, CalcSumPart::Sub(b.into()))
+    }
+
+    fn bin_product(a: impl Into<CalcValue>, b: CalcProductPart) -> Self {
+        Self::unary(CalcProduct::binary(a, b))
+    }
+    pub fn bin_mul(a: impl Into<CalcValue>, b: impl Into<CalcValue>) -> Self {
+        Self::bin_product(a, CalcProductPart::Mul(b.into()))
+    }
+    pub fn bin_div(a: impl Into<CalcValue>, b: impl Into<Number>) -> Self {
+        Self::bin_product(a, CalcProductPart::Div(b.into()))
+    }
+}
+
+#[derive(Clone, Debug, CSSValue)]
+enum CalcSumPart {
+    #[value(prefix = " + ")]
+    Add(CalcProduct),
+    #[value(prefix = " - ")]
+    Sub(CalcProduct),
+}
+
+#[derive(Clone, Debug)]
+pub struct CalcSum(CalcProduct, Vec<CalcSumPart>);
+impl CalcSum {
+    pub fn unary(value: impl Into<CalcProduct>) -> Self {
+        Self(value.into(), Vec::new())
+    }
+    fn binary(a: impl Into<CalcProduct>, b: CalcSumPart) -> Self {
+        Self(a.into(), vec![b])
+    }
+}
+impl WriteValue for CalcSum {
+    fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
+        self.0.write_value(f)?;
+        for part in &self.1 {
+            part.write_value(f)?;
+        }
+        Ok(())
+    }
+}
+impl<T> From<T> for CalcSum
+where
+    T: Into<CalcProduct>,
+{
+    fn from(v: T) -> Self {
+        Self::unary(v)
+    }
+}
+
+#[derive(Clone, Debug, CSSValue)]
+enum CalcProductPart {
+    #[value(prefix = " * ")]
+    Mul(CalcValue),
+    #[value(prefix = " / ")]
+    Div(Number),
+}
+
+#[derive(Clone, Debug)]
+pub struct CalcProduct(CalcValue, Vec<CalcProductPart>);
+impl CalcProduct {
+    pub fn unary(value: impl Into<CalcValue>) -> Self {
+        Self(value.into(), Vec::new())
+    }
+    fn binary(a: impl Into<CalcValue>, b: CalcProductPart) -> Self {
+        Self(a.into(), vec![b])
+    }
+}
+impl WriteValue for CalcProduct {
+    fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
+        self.0.write_value(f)?;
+        for part in &self.1 {
+            part.write_value(f)?;
+        }
+        Ok(())
+    }
+}
+impl<T> From<T> for CalcProduct
+where
+    T: Into<CalcValue>,
+{
+    fn from(v: T) -> Self {
+        Self::unary(v)
+    }
+}
+
+#[derive(Clone, Debug, FromVariants)]
+pub enum CalcValue {
+    // TODO dimension
+    #[from_variant(into)]
+    Number(NumberPercentage),
+    Calc(Box<CalcSum>),
+}
+impl WriteValue for CalcValue {
+    fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
+        todo!()
+    }
+}
+
 // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value
-// #[derive(Clone, Debug, CSSValue)]
+#[derive(Clone, Debug, CSSValue)]
 pub enum Color {
-    // #[value(prefix = "#")]
+    #[value(prefix = "#", write_fn = "Self::write_hex")]
+    // TODO custom function to format as hex
     Hex(Integer),
-    // #[function]
+    #[function]
     Rgb {
         r: NumberPercentage,
         g: NumberPercentage,
         b: NumberPercentage,
         a: Option<NumberPercentage>,
     },
-    // #[function]
+    #[function]
     Hsl {
         h: Angle,
         s: Percentage,
@@ -128,14 +243,14 @@ pub enum Color {
         a: Option<NumberPercentage>,
     },
 
-    // #[keyword]
+    #[keyword]
     Transparent,
-    // #[keyword]
+    #[keyword(value = "currentcolor")]
     CurrentColor,
 }
 impl Color {
-    pub fn hex(hex: Integer) -> Self {
-        Self::Hex(hex)
+    pub fn hex(hex: impl Into<Integer>) -> Self {
+        Self::Hex(hex.into())
     }
 
     pub fn rgb(
@@ -150,6 +265,19 @@ impl Color {
             a: None,
         }
     }
+    pub fn rgba(
+        r: impl Into<NumberPercentage>,
+        g: impl Into<NumberPercentage>,
+        b: impl Into<NumberPercentage>,
+        a: impl Into<NumberPercentage>,
+    ) -> Self {
+        Self::Rgb {
+            r: r.into(),
+            g: g.into(),
+            b: b.into(),
+            a: Some(a.into()),
+        }
+    }
 
     pub fn hsl(h: impl Into<Angle>, s: impl Into<Percentage>, l: impl Into<Percentage>) -> Self {
         Self::Hsl {
@@ -159,8 +287,24 @@ impl Color {
             a: None,
         }
     }
-}
+    pub fn hsla(
+        h: impl Into<Angle>,
+        s: impl Into<Percentage>,
+        l: impl Into<Percentage>,
+        a: impl Into<NumberPercentage>,
+    ) -> Self {
+        Self::Hsl {
+            h: h.into(),
+            s: s.into(),
+            l: l.into(),
+            a: Some(a.into()),
+        }
+    }
 
+    fn write_hex(f: &mut CSSWriter, hex: Integer) -> WriteResult {
+        write!(f, "{:X}", hex.0)
+    }
+}
 
 // TODO implement custom-ident as a basic type
 // https://developer.mozilla.org/en-US/docs/Web/CSS/custom-ident

@@ -4,8 +4,8 @@ use crate::args;
 use attributes::CSSValueAttr;
 use heck::KebabCase;
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
-use syn::{spanned::Spanned, Data, DeriveInput, Fields, Ident, LitStr};
+use quote::{quote, quote_spanned, ToTokens};
+use syn::{spanned::Spanned, Data, DeriveInput, Fields, Ident, LitStr, Token};
 
 fn is_fields_single_unnamed(fields: &Fields) -> bool {
     match fields {
@@ -42,6 +42,37 @@ fn bind_idents_for_fields(fields: &Fields) -> (TokenStream, Vec<Ident>) {
             (quote! { (#(#idents),*) }, idents)
         }
         Fields::Unit => (TokenStream::new(), Vec::new()),
+    }
+}
+
+fn gen_join_maybe_writes<'a>(
+    idents: impl IntoIterator<Item = &'a Ident>,
+    separator_str: impl ToTokens,
+) -> TokenStream {
+    let maybe_write_idents = idents
+        .into_iter()
+        .map(|ident| quote_spanned! {ident.span()=>
+            ::russ_css::MaybeWriteValue::maybe_write_value(#ident, &mut ::russ_css::CSSWriter::new(&mut __buf))?
+        });
+
+    // TODO only use this overhead if absolutely necessary! (either Option<T> or forced using arg flag)
+    quote! {
+        use ::std::io::Write;
+
+        let mut __buf = Vec::new();
+        let mut __wrote_first = false;
+        #(
+            __buf.clear();
+            if #maybe_write_idents {
+                if __wrote_first {
+                    f.write_str(#separator_str)?;
+                } else {
+                    __wrote_first = true;
+                }
+
+                f.write_all(&__buf)?;
+            }
+        )*
     }
 }
 
@@ -85,6 +116,25 @@ fn generate_write_for_fields_tokens(
                     }
                 }
             }
+            CSSValueAttr::Function(function) => {
+                let fn_name_str = function
+                    .name
+                    .as_ref()
+                    .map(LitStr::value)
+                    .unwrap_or_else(|| container_ident.to_string().to_kebab_case());
+
+                let write_arguments = gen_join_maybe_writes(idents, ",");
+
+                quote! {
+                    {
+                        f.write_str(#fn_name_str)?;
+                        f.write_char('(')?;
+                        #write_arguments
+                        f.write_char(')')?;
+                        Ok(())
+                    }
+                }
+            }
             CSSValueAttr::Keyword(keyword) => {
                 if !is_fields_unit(fields) {
                     return Err(syn::Error::new_spanned(
@@ -115,24 +165,10 @@ fn generate_write_for_fields_tokens(
                     .map(LitStr::value)
                     .unwrap_or(String::from(" "));
 
+                let write_values = gen_join_maybe_writes(idents, separator_str);
                 quote! {
                     {
-                        use ::std::io::Write;
-
-                        let mut __buf = Vec::new();
-                        let mut __wrote_first = false;
-                        #(
-                            __buf.clear();
-                            if ::russ_css::MaybeWriteValue::maybe_write_value(#idents, &mut ::russ_css::CSSWriter::new(&mut __buf))? {
-                                if __wrote_first {
-                                    f.write_str(#separator_str)?;
-                                } else {
-                                    __wrote_first = true;
-                                }
-
-                                f.write_all(&__buf)?;
-                            }
-                        )*
+                        #write_values
                         Ok(())
                     }
                 }

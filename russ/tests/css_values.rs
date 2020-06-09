@@ -1,4 +1,4 @@
-use russ::css::{types::*, CSSWriter, WriteValue};
+use russ::css::{values::*, CSSWriter, WriteValue};
 
 fn render(value: impl WriteValue) -> String {
     let mut v = Vec::new();
@@ -6,6 +6,49 @@ fn render(value: impl WriteValue) -> String {
         .write_value(&mut CSSWriter::new(&mut v))
         .expect("failed to write value");
     String::from_utf8(v).expect("invalid utf8 returned")
+}
+
+#[test]
+fn calc() {
+    assert_eq!(
+        // TODO use Length::px(80) when Calc is finished
+        render(Calc::bin_sub(Percentage::from(100), Percentage::from(80))),
+        "calc(100% - 80px)"
+    );
+}
+
+#[test]
+fn color() {
+    // assert_eq!(render(Color::hex(0xff0099)), "#FF0099");
+
+    assert_eq!(render(Color::rgb(255, 0, 153)), "rgb(255,0,153)");
+    assert_eq!(
+        render(Color::rgb(
+            Percentage::from(100),
+            Percentage::from(0),
+            Percentage::from(60)
+        )),
+        "rgb(100%,0%,60%)"
+    );
+    assert_eq!(render(Color::rgba(255, 0, 153, 1)), "rgb(255,0,153,1)");
+
+    assert_eq!(
+        render(Color::hsl(
+            Angle::turn(0.75),
+            Percentage::from(60),
+            Percentage::from(70),
+        )),
+        "hsl(0.75turn,60%,70%)"
+    );
+    assert_eq!(
+        render(Color::hsla(
+            Angle::deg(270),
+            Percentage::from(60),
+            Percentage::from(50),
+            Percentage::from(15),
+        )),
+        "hsl(270deg,60%,50%,15%)"
+    );
 }
 
 #[test]

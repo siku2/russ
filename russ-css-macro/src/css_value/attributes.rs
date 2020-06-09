@@ -26,6 +26,28 @@ impl ToTokens for DimensionAttr {
     }
 }
 
+pub struct FunctionAttr {
+    attr: Attribute,
+    pub name: Option<LitStr>,
+}
+impl FromArgs for FunctionAttr {
+    fn attr_path() -> &'static str {
+        "function"
+    }
+
+    fn from_args(attr: Attribute, args: &Args) -> syn::Result<Self> {
+        Ok(Self {
+            attr,
+            name: args.get_kwarg_str("name").transpose()?.cloned(),
+        })
+    }
+}
+impl ToTokens for FunctionAttr {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        self.attr.to_tokens(tokens)
+    }
+}
+
 pub struct KeywordAttr {
     attr: Attribute,
     pub value: Option<LitStr>,
@@ -70,6 +92,7 @@ impl ToTokens for ValueAttr {
 
 pub enum CSSValueAttr {
     Dimension(DimensionAttr),
+    Function(FunctionAttr),
     Keyword(KeywordAttr),
     Value(ValueAttr),
 }
@@ -78,6 +101,8 @@ impl ParseAttr for CSSValueAttr {
         Some({
             if let Some(attr) = DimensionAttr::parse_attr(attr) {
                 attr.map(Self::Dimension)
+            } else if let Some(attr) = FunctionAttr::parse_attr(attr) {
+                attr.map(Self::Function)
             } else if let Some(attr) = KeywordAttr::parse_attr(attr) {
                 attr.map(Self::Keyword)
             } else if let Some(attr) = ValueAttr::parse_attr(attr) {
@@ -93,6 +118,7 @@ impl ToTokens for CSSValueAttr {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         match &self {
             Self::Dimension(attr) => attr.to_tokens(tokens),
+            Self::Function(attr) => attr.to_tokens(tokens),
             Self::Keyword(attr) => attr.to_tokens(tokens),
             Self::Value(attr) => attr.to_tokens(tokens),
         }
