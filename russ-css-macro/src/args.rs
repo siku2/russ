@@ -1,5 +1,6 @@
 use proc_macro2::Ident;
 use quote::{quote, ToTokens};
+use std::{cell::RefCell, collections::HashSet};
 use syn::{
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
@@ -49,14 +50,18 @@ pub enum Arg {
     Keyword(KwArg),
 }
 impl Arg {
+    pub fn get_ident(&self) -> &Ident {
+        match &self {
+            Self::Flag(arg) => &arg.flag,
+            Self::Keyword(arg) => &arg.key,
+        }
+    }
+
     pub fn is_ident<I: ?Sized>(&self, ident: &I) -> bool
     where
         Ident: PartialEq<I>,
     {
-        match &self {
-            Self::Flag(arg) => &arg.flag == ident,
-            Self::Keyword(arg) => &arg.key == ident,
-        }
+        self.get_ident() == ident
     }
 }
 impl Parse for Arg {
@@ -69,10 +74,20 @@ impl Parse for Arg {
     }
 }
 
-pub struct Args(Punctuated<Arg, Token![,]>);
+pub struct Args {
+    args: Punctuated<Arg, Token![,]>,
+    used_args: RefCell<HashSet<Ident>>,
+}
 impl Args {
+    fn new_with_args(args: Punctuated<Arg, Token![,]>) -> Self {
+        Self {
+            args,
+            used_args: RefCell::new(HashSet::new()),
+        }
+    }
+
     pub fn new() -> Self {
-        Self(Punctuated::new())
+        Self::new_with_args(Punctuated::new())
     }
 
     pub fn from_attribute(attr: &Attribute) -> syn::Result<Self> {
@@ -84,14 +99,26 @@ impl Args {
     }
 
     pub fn iter(&self) -> syn::punctuated::Iter<Arg> {
-        self.0.iter()
+        self.args.iter()
+    }
+
+    pub fn iter_unused(&self) -> impl Iterator<Item = &Ident> {
+        let used_idents = self.used_args.borrow();
+        self.iter()
+            .map(|arg| arg.get_ident())
+            .filter(move |ident| !used_idents.contains(ident))
     }
 
     pub fn get_arg<I: ?Sized>(&self, ident: &I) -> Option<&Arg>
     where
         Ident: PartialEq<I>,
     {
-        self.iter().find(|arg| arg.is_ident(ident))
+        let arg = self.iter().find(|arg| arg.is_ident(ident));
+        if let Some(arg) = arg {
+            self.used_args.borrow_mut().insert(arg.get_ident().clone());
+        }
+
+        arg
     }
 
     pub fn get_flag<I: ?Sized>(&self, flag: &I) -> Option<&FlagArg>
@@ -133,7 +160,9 @@ impl Args {
 }
 impl Parse for Args {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        input.call(Punctuated::parse_terminated).map(Self)
+        input
+            .call(Punctuated::parse_terminated)
+            .map(Self::new_with_args)
     }
 }
 
@@ -157,7 +186,16 @@ where
 {
     fn parse_attr(attr: &Attribute) -> Option<syn::Result<Self>> {
         if attr.path.is_ident(Self::attr_path()) {
-            Some(Args::from_attribute(attr).and_then(|args| Self::from_args(attr.clone(), &args)))
+            Some((|| {
+                let args = Args::from_attribute(attr)?;
+                let inst = Self::from_args(attr.clone(), &args)?;
+                let unused = args.iter_unused().next();
+                if let Some(unused) = unused {
+                    Err(syn::Error::new_spanned(unused, "unexpected arguments"))
+                } else {
+                    Ok(inst)
+                }
+            })())
         } else {
             None
         }

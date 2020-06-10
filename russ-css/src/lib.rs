@@ -85,3 +85,12 @@ where
         }
     }
 }
+
+impl<T> WriteValue for Box<T>
+where
+    T: WriteValue,
+{
+    fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
+        self.as_ref().write_value(f)
+    }
+}

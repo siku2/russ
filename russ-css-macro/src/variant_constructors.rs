@@ -6,6 +6,7 @@ use syn::{spanned::Spanned, Attribute, Data, DeriveInput, Fields, Ident, LitStr,
 
 struct VariantConstructorAttr {
     attr: Attribute,
+    skip: bool,
     name: Option<LitStr>,
 }
 impl FromArgs for VariantConstructorAttr {
@@ -15,6 +16,7 @@ impl FromArgs for VariantConstructorAttr {
     fn from_args(attr: Attribute, args: &Args) -> syn::Result<Self> {
         Ok(Self {
             attr,
+            skip: args.has_flag("skip"),
             name: args.get_kwarg_str("name").transpose()?.cloned(),
         })
     }
@@ -28,6 +30,10 @@ impl ToTokens for VariantConstructorAttr {
 fn generate_variant_constructor_fn(variant: &Variant) -> syn::Result<TokenStream> {
     let arg: Option<VariantConstructorAttr> =
         args::parse_single_from_attrs(&variant.attrs).transpose()?;
+
+    if arg.as_ref().map(|arg| arg.skip).unwrap_or_default() {
+        return Ok(quote! {});
+    }
 
     let variant_ident_str = arg
         .and_then(|arg| arg.name)

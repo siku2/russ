@@ -117,13 +117,17 @@ fn generate_write_for_fields_tokens(
                 }
             }
             CSSValueAttr::Function(function) => {
+                let separator_str = function
+                    .separator
+                    .as_ref()
+                    .map(LitStr::value)
+                    .unwrap_or(String::from(","));
+                let write_arguments = gen_join_maybe_writes(idents, separator_str);
                 let fn_name_str = function
                     .name
                     .as_ref()
                     .map(LitStr::value)
                     .unwrap_or_else(|| container_ident.to_string().to_kebab_case());
-
-                let write_arguments = gen_join_maybe_writes(idents, ",");
 
                 quote! {
                     {
@@ -152,7 +156,9 @@ fn generate_write_for_fields_tokens(
                 quote! { f.write_str(#value_str) }
             }
             CSSValueAttr::Value(value) => {
-                let write_prefix = value.prefix.map(|prefix| quote! { f.write_str(#prefix)?; });
+                let write_prefix = value.prefix.map(|value| quote! { f.write_str(#value)?; });
+                let write_suffix = value.suffix.map(|value| quote! { f.write_str(#value)?; });
+
                 let write_value = if let Some(write_fn) = value.write_fn {
                     let fn_path = syn::parse_str::<ExprPath>(&write_fn.value())?;
                     quote! {
@@ -179,6 +185,7 @@ fn generate_write_for_fields_tokens(
                     {
                         #write_prefix
                         #write_value
+                        #write_suffix
                         Ok(())
                     }
                 }

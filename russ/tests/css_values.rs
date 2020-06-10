@@ -11,9 +11,12 @@ fn render(value: impl WriteValue) -> String {
 #[test]
 fn calc() {
     assert_eq!(
-        // TODO use Length::px(80) when Calc is finished
-        render(Calc::bin_sub(Percentage::from(100), Percentage::from(80))),
+        render(Calc::bin_sub(Percentage::from(100), Length::px(80))),
         "calc(100% - 80px)"
+    );
+    assert_eq!(
+        render(Calc::bin_div(Calc::bin_div(Length::px(100), 2), 2)),
+        "calc((100px / 2) / 2)"
     );
 }
 

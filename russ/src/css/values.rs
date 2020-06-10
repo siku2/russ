@@ -31,17 +31,9 @@ pub enum AnglePercentage {
 }
 
 #[derive(Clone, Copy, Debug, CSSValue, FromVariants)]
-pub enum BasicShapeArg {
-    #[from_variant(into)]
-    Length(Length),
-    Percentage(Percentage),
-}
-
-#[derive(Clone, Copy, Debug, CSSValue, FromVariants)]
 pub enum BasicShapeRadius {
     #[from_variant(into)]
-    Length(Length),
-    Percentage(Percentage),
+    LengthPercentage(Length),
 
     #[keyword]
     ClosestSide,
@@ -52,21 +44,27 @@ pub enum BasicShapeRadius {
 // https://developer.mozilla.org/en-US/docs/Web/CSS/basic-shape
 // #[derive(Clone, Debug, CSSValue)]
 pub enum BasicShape {
+    // TODO separate arguments with SPACE
+    // #[function]
     Inset(
-        BasicShapeArg,
-        Option<BasicShapeArg>,
-        Option<BasicShapeArg>,
-        Option<BasicShapeArg>,
+        LengthPercentage,
+        Option<LengthPercentage>,
+        Option<LengthPercentage>,
+        Option<LengthPercentage>,
         // TODO Optional<borderradius>
     ),
+    // #[function]
     Circle(Option<BasicShapeRadius>, Option<Position>),
+    // #[function]
     Ellipse(
         Option<(BasicShapeRadius, BasicShapeRadius)>,
         Option<Position>,
     ),
     // TODO fill-rule
-    Polygon(Vec<(BasicShapeArg, BasicShapeArg)>),
+    // #[function]
+    Polygon(Vec<(LengthPercentage, LengthPercentage)>),
     // TODO fill-rule
+    // #[function]
     Path(CSSString),
 }
 
@@ -209,16 +207,24 @@ where
     }
 }
 
-#[derive(Clone, Debug, FromVariants)]
+#[derive(Clone, Debug, CSSValue, FromVariants)]
 pub enum CalcValue {
-    // TODO dimension
     #[from_variant(into)]
-    Number(NumberPercentage),
+    Number(Number),
+    #[value(prefix = "(", suffix = ")")]
     Calc(Box<CalcSum>),
+    // dimensions
+    Angle(Angle),
+    Flex(Flex),
+    Frequency(Frequency),
+    Length(Length),
+    Percentage(Percentage),
+    Resolution(Resolution),
+    Time(Time),
 }
-impl WriteValue for CalcValue {
-    fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
-        todo!()
+impl From<Calc> for CalcValue {
+    fn from(v: Calc) -> Self {
+        Self::Calc(Box::new(v.0))
     }
 }
 
@@ -226,16 +232,15 @@ impl WriteValue for CalcValue {
 #[derive(Clone, Debug, CSSValue)]
 pub enum Color {
     #[value(prefix = "#", write_fn = "Self::write_hex")]
-    // TODO custom function to format as hex
     Hex(Integer),
-    #[function]
+    #[function()]
     Rgb {
         r: NumberPercentage,
         g: NumberPercentage,
         b: NumberPercentage,
         a: Option<NumberPercentage>,
     },
-    #[function]
+    #[function()]
     Hsl {
         h: Angle,
         s: Percentage,
@@ -306,10 +311,14 @@ impl Color {
     }
 }
 
-// TODO implement custom-ident as a basic type
 // https://developer.mozilla.org/en-US/docs/Web/CSS/custom-ident
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CustomIdent(String);
+impl WriteValue for CustomIdent {
+    fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
+        f.write_str(&self.0)
+    }
+}
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/string
 #[derive(Clone, Debug)]
@@ -333,19 +342,33 @@ where
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/filter-function
-// #[derive(Clone, Debug, CSSValue)]
+#[derive(Clone, Debug, CSSValue, VariantConstructors)]
 pub enum FilterFunction {
-    // TODO
-    Blur(),
-    Brightness(),
-    Contrast(),
-    DropShadow(),
-    Grayscale(),
-    HueRotate(),
-    Invert(),
-    Opacity(),
-    Saturate(),
-    Sepia(),
+    #[function]
+    Blur(Length),
+    #[function]
+    Brightness(NumberPercentage),
+    #[function]
+    Contrast(NumberPercentage),
+    #[function(separator = " ")]
+    DropShadow {
+        offset_x: Length,
+        offset_y: Length,
+        blur_radius: Option<Length>,
+        color: Option<Color>,
+    },
+    #[function]
+    Grayscale(NumberPercentage),
+    #[function]
+    HueRotate(Angle),
+    #[function]
+    Invert(NumberPercentage),
+    #[function]
+    Opacity(NumberPercentage),
+    #[function]
+    Saturate(NumberPercentage),
+    #[function]
+    Sepia(NumberPercentage),
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/flex_value
@@ -387,16 +410,46 @@ pub enum Gradient {
     Repeating(),
 }
 
+#[derive(Clone, Debug, CSSValue)]
+pub enum ImageTags {
+    #[keyword]
+    Ltr,
+    #[keyword]
+    Rtl,
+}
+
+#[derive(Clone, Debug, CSSValue, FromVariants)]
+pub enum ImageSrc {
+    Url(Url),
+    Str(CSSString),
+}
+
+#[derive(Clone, Debug, CSSValue)]
+#[value]
+pub struct CrossFadeMixingImage(Option<Percentage>, Image);
+#[derive(Clone, Debug, CSSValue, FromVariants)]
+pub enum CrossFadeFinalImage {
+    Image(Image),
+    Color(Color),
+}
+
+#[derive(Clone, Debug, CSSValue)]
+#[value]
+pub struct ImageSetOption(Image, Resolution);
+
 // https://developer.mozilla.org/en-US/docs/Web/CSS/image
 #[derive(Clone, Debug, CSSValue, FromVariants)]
 pub enum Image {
     Url(Url),
-    // Gradient(Gradient),
     // TODO
+    // Gradient(Gradient),
     // Element(),
-    // Image(),
-    // CrossFade(),
-    // ImageSet(),
+    #[function]
+    Image(Option<ImageTags>, #[iter] Vec<ImageSrc>, Option<Color>),
+    #[function]
+    CrossFade(#[iter] Vec<CrossFadeMixingImage>, Option<Box<CrossFadeFinalImage>>),
+    #[function]
+    ImageSet(#[iter] Vec<ImageSetOption>),
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/integer
@@ -630,13 +683,13 @@ impl Position {
 #[derive(Clone, Copy, Debug, CSSValue)]
 #[value(separator = "/")]
 pub struct Ratio(pub Integer, pub Integer);
-impl Ratio {
-    pub fn width(&self) -> Integer {
-        self.0
-    }
-
-    pub fn height(&self) -> Integer {
-        self.0
+impl<W, H> From<(W, H)> for Ratio
+where
+    W: Into<Integer>,
+    H: Into<Integer>,
+{
+    fn from((w, h): (W, H)) -> Self {
+        Self(w.into(), h.into())
     }
 }
 
@@ -649,6 +702,11 @@ pub enum Resolution {
     Dpcm(Number),
     #[dimension]
     Dppx(Number),
+}
+impl Resolution {
+    pub fn x(v: impl Into<Number>) -> Self {
+        Self::Dppx(v.into())
+    }
 }
 
 // TODO shape-box
@@ -705,4 +763,13 @@ pub enum TransformFunction {
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/url
 #[derive(Clone, Debug, CSSValue)]
-pub struct Url(pub CSSString);
+#[function]
+pub struct Url(CSSString);
+impl<T> From<T> for Url
+where
+    T: Into<CSSString>,
+{
+    fn from(v: T) -> Self {
+        Self(v.into())
+    }
+}
