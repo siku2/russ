@@ -117,9 +117,11 @@ impl Calc {
     fn bin_sum(a: impl Into<CalcProduct>, b: CalcSumPart) -> Self {
         Self::unary(CalcSum::binary(a, b))
     }
+
     pub fn bin_add(a: impl Into<CalcProduct>, b: impl Into<CalcProduct>) -> Self {
         Self::bin_sum(a, CalcSumPart::Add(b.into()))
     }
+
     pub fn bin_sub(a: impl Into<CalcProduct>, b: impl Into<CalcProduct>) -> Self {
         Self::bin_sum(a, CalcSumPart::Sub(b.into()))
     }
@@ -127,9 +129,11 @@ impl Calc {
     fn bin_product(a: impl Into<CalcValue>, b: CalcProductPart) -> Self {
         Self::unary(CalcProduct::binary(a, b))
     }
+
     pub fn bin_mul(a: impl Into<CalcValue>, b: impl Into<CalcValue>) -> Self {
         Self::bin_product(a, CalcProductPart::Mul(b.into()))
     }
+
     pub fn bin_div(a: impl Into<CalcValue>, b: impl Into<Number>) -> Self {
         Self::bin_product(a, CalcProductPart::Div(b.into()))
     }
@@ -149,6 +153,7 @@ impl CalcSum {
     pub fn unary(value: impl Into<CalcProduct>) -> Self {
         Self(value.into(), Vec::new())
     }
+
     fn binary(a: impl Into<CalcProduct>, b: CalcSumPart) -> Self {
         Self(a.into(), vec![b])
     }
@@ -185,6 +190,7 @@ impl CalcProduct {
     pub fn unary(value: impl Into<CalcValue>) -> Self {
         Self(value.into(), Vec::new())
     }
+
     fn binary(a: impl Into<CalcValue>, b: CalcProductPart) -> Self {
         Self(a.into(), vec![b])
     }
@@ -270,6 +276,7 @@ impl Color {
             a: None,
         }
     }
+
     pub fn rgba(
         r: impl Into<NumberPercentage>,
         g: impl Into<NumberPercentage>,
@@ -292,6 +299,7 @@ impl Color {
             a: None,
         }
     }
+
     pub fn hsla(
         h: impl Into<Angle>,
         s: impl Into<Percentage>,
@@ -654,12 +662,15 @@ impl Position {
     pub fn center() -> Self {
         Self::x(PositionHorizontal::Center)
     }
+
     pub fn x(horizontal: impl Into<PositionHorizontal>) -> Self {
         Self::new(Some(horizontal.into()), None)
     }
+
     pub fn y(vertical: impl Into<PositionVertical>) -> Self {
         Self::new(None, Some(vertical.into()))
     }
+
     pub fn xy(
         horizontal: impl Into<PositionHorizontal>,
         vertical: impl Into<PositionVertical>,

@@ -13,6 +13,7 @@ impl FromArgs for VariantConstructorAttr {
     fn attr_path() -> &'static str {
         "constructor"
     }
+
     fn from_args(attr: Attribute, args: &Args) -> syn::Result<Self> {
         Ok(Self {
             attr,

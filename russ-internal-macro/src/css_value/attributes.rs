@@ -58,6 +58,7 @@ impl FromArgs for KeywordAttr {
     fn attr_path() -> &'static str {
         "keyword"
     }
+
     fn from_args(attr: Attribute, args: &Args) -> syn::Result<Self> {
         Ok(Self {
             attr,
@@ -82,6 +83,7 @@ impl FromArgs for ValueAttr {
     fn attr_path() -> &'static str {
         "value"
     }
+
     fn from_args(attr: Attribute, args: &Args) -> syn::Result<Self> {
         Ok(Self {
             attr,

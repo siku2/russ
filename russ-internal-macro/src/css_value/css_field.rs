@@ -13,6 +13,7 @@ impl FromArgs for FieldAttr {
     fn attr_path() -> &'static str {
         "field"
     }
+
     fn from_args(attr: Attribute, args: &Args) -> syn::Result<Self> {
         Ok(Self {
             attr,

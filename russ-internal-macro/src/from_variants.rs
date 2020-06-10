@@ -11,6 +11,7 @@ impl FromArgs for FromVariantAttr {
     fn attr_path() -> &'static str {
         "from_variant"
     }
+
     fn from_args(attr: Attribute, args: &Args) -> syn::Result<Self> {
         Ok(Self {
             attr,
