@@ -45,7 +45,7 @@ impl Parse for Property {
 
 pub struct Declaration {
     property: Property,
-    colon: Token![:],
+    _colon: Token![:],
     value: Value,
 }
 
@@ -62,7 +62,7 @@ impl Parse for Declaration {
     fn parse(input: ParseStream) -> parse::Result<Self> {
         Ok(Self {
             property: input.parse()?,
-            colon: input.parse()?,
+            _colon: input.parse()?,
             value: input.parse()?,
         })
     }
@@ -95,9 +95,11 @@ impl Display for DeclarationBlock {
 impl Parse for DeclarationBlock {
     fn parse(input: ParseStream) -> parse::Result<Self> {
         let content;
+        let brace_token = braced!(content in input);
+        let declarations = content.parse_terminated(Declaration::parse)?;
         Ok(Self {
-            brace_token: braced!(content in input),
-            declarations: content.parse_terminated(Declaration::parse)?,
+            brace_token,
+            declarations,
         })
     }
 }

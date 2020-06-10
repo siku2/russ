@@ -95,7 +95,7 @@ fn generate_write_for_fields_tokens(
                     .separator
                     .as_ref()
                     .map(LitStr::value)
-                    .unwrap_or(String::from(","));
+                    .unwrap_or_else(|| String::from(","));
                 let write_arguments = css_field::gen_join_fields(css_fields, &separator_str)?;
                 let fn_name_str = function
                     .name
@@ -152,7 +152,7 @@ fn generate_write_for_fields_tokens(
                         .separator
                         .as_ref()
                         .map(LitStr::value)
-                        .unwrap_or(String::from(" "));
+                        .unwrap_or_else(|| String::from(" "));
 
                     css_field::gen_join_fields(css_fields, &separator_str)?
                 };

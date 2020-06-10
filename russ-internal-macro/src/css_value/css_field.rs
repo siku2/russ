@@ -143,7 +143,7 @@ impl CSSField {
     }
 }
 
-pub fn gen_join_fields<'a>(fields: &[CSSField], separator: &str) -> syn::Result<TokenStream> {
+pub fn gen_join_fields(fields: &[CSSField], separator: &str) -> syn::Result<TokenStream> {
     gen_join_fields_with_write_separator(
         fields,
         quote! {
@@ -153,7 +153,7 @@ pub fn gen_join_fields<'a>(fields: &[CSSField], separator: &str) -> syn::Result<
     )
 }
 
-pub fn gen_join_fields_with_write_separator<'a>(
+pub fn gen_join_fields_with_write_separator(
     fields: &[CSSField],
     write_separator: impl ToTokens,
 ) -> syn::Result<TokenStream> {

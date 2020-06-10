@@ -1,8 +1,6 @@
 // https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Types
 
 use super::{CSSWriter, WriteResult, WriteValue};
-use lazy_static::lazy_static;
-use regex::Regex;
 use russ_internal::{CSSValue, FromVariants, VariantConstructors};
 use std::{fmt::Debug, io::Write};
 
@@ -333,11 +331,7 @@ impl WriteValue for CustomIdent {
 pub struct CSSString(String);
 impl WriteValue for CSSString {
     fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
-        lazy_static! {
-            static ref RE: Regex = Regex::new("\"").unwrap();
-        }
-
-        write!(f, "\"{}\"", RE.replace_all(&self.0, "\\\""))
+        write!(f, "\"{}\"", self.0.replace("\"", "\\\""))
     }
 }
 impl<T> From<T> for CSSString
