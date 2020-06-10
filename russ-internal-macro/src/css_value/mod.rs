@@ -1,10 +1,12 @@
 mod attributes;
+mod css_field;
 
 use crate::args;
 use attributes::CSSValueAttr;
+use css_field::CSSField;
 use heck::KebabCase;
 use proc_macro2::TokenStream;
-use quote::{quote, quote_spanned, ToTokens};
+use quote::{quote, ToTokens};
 use syn::{spanned::Spanned, Data, DeriveInput, ExprPath, Fields, Ident, LitStr};
 
 fn is_fields_single_unnamed(fields: &Fields) -> bool {
@@ -21,66 +23,40 @@ fn is_fields_unit(fields: &Fields) -> bool {
     }
 }
 
-fn bind_idents_for_fields(fields: &Fields) -> (TokenStream, Vec<Ident>) {
-    match fields {
+fn bind_idents_for_fields(fields: &Fields) -> syn::Result<(TokenStream, Vec<CSSField>)> {
+    Ok(match fields {
         Fields::Named(fields) => {
-            let idents = fields
-                .named
-                .iter()
-                .map(|field| field.ident.clone().unwrap())
-                .collect::<Vec<_>>();
-            (quote! { {#(#idents),*} }, idents)
+            let mut idents = Vec::new();
+            let mut css_fields = Vec::new();
+
+            for field in &fields.named {
+                let ident = field.ident.clone().unwrap();
+                idents.push(ident.to_token_stream());
+                css_fields.push(CSSField::from_field(ident, field)?);
+            }
+            (quote! { {#(#idents),*} }, css_fields)
         }
         Fields::Unnamed(fields) => {
-            let idents = fields
-                .unnamed
-                .iter()
-                .enumerate()
-                .map(|(i, field)| Ident::new(&format!("v{}", i), field.span()))
-                .collect::<Vec<_>>();
+            let mut idents = Vec::new();
+            let mut css_fields = Vec::new();
 
-            (quote! { (#(#idents),*) }, idents)
+            for (i, field) in fields.unnamed.iter().enumerate() {
+                let ident = Ident::new(&format!("v{}", i), field.span());
+                idents.push(ident.to_token_stream());
+                css_fields.push(CSSField::from_field(ident, field)?);
+            }
+
+            (quote! { (#(#idents),*) }, css_fields)
         }
         Fields::Unit => (TokenStream::new(), Vec::new()),
-    }
-}
-
-fn gen_join_maybe_writes<'a>(
-    idents: impl IntoIterator<Item = &'a Ident>,
-    separator_str: impl ToTokens,
-) -> TokenStream {
-    let maybe_write_idents = idents
-        .into_iter()
-        .map(|ident| quote_spanned! {ident.span()=>
-            ::russ_internal::MaybeWriteValue::maybe_write_value(#ident, &mut ::russ_internal::CSSWriter::new(&mut __buf))?
-        });
-
-    // TODO only use this overhead if absolutely necessary! (either Option<T> or forced using arg flag)
-    quote! {
-        use ::std::io::Write;
-
-        let mut __buf = Vec::new();
-        let mut __wrote_first = false;
-        #(
-            __buf.clear();
-            if #maybe_write_idents {
-                if __wrote_first {
-                    f.write_str(#separator_str)?;
-                } else {
-                    __wrote_first = true;
-                }
-
-                f.write_all(&__buf)?;
-            }
-        )*
-    }
+    })
 }
 
 fn generate_write_for_fields_tokens(
     attr: Option<CSSValueAttr>,
     fields: &Fields,
     container_ident: &Ident,
-    idents: &[Ident],
+    css_fields: &[CSSField],
 ) -> syn::Result<TokenStream> {
     if let Some(attr) = attr {
         Ok(match attr {
@@ -106,13 +82,11 @@ fn generate_write_for_fields_tokens(
                         .as_ref()
                         .map(LitStr::value)
                         .unwrap_or_else(|| container_ident.to_string().to_lowercase());
-                    let value_ident = idents.first().unwrap();
+                    let write_value = css_fields.first().unwrap().gen_write()?;
 
                     quote! {
-                        {
-                            ::russ_internal::WriteValue::write_value(#value_ident, f)?;
-                            f.write_str(#unit_str)
-                        }
+                        #write_value
+                        f.write_str(#unit_str)
                     }
                 }
             }
@@ -122,7 +96,7 @@ fn generate_write_for_fields_tokens(
                     .as_ref()
                     .map(LitStr::value)
                     .unwrap_or(String::from(","));
-                let write_arguments = gen_join_maybe_writes(idents, separator_str);
+                let write_arguments = css_field::gen_join_fields(css_fields, &separator_str)?;
                 let fn_name_str = function
                     .name
                     .as_ref()
@@ -130,13 +104,11 @@ fn generate_write_for_fields_tokens(
                     .unwrap_or_else(|| container_ident.to_string().to_kebab_case());
 
                 quote! {
-                    {
-                        f.write_str(#fn_name_str)?;
-                        f.write_char('(')?;
-                        #write_arguments
-                        f.write_char(')')?;
-                        Ok(())
-                    }
+                    f.write_str(#fn_name_str)?;
+                    f.write_char('(')?;
+                    #write_arguments
+                    f.write_char(')')?;
+                    Ok(())
                 }
             }
             CSSValueAttr::Keyword(keyword) => {
@@ -161,11 +133,15 @@ fn generate_write_for_fields_tokens(
 
                 let write_value = if let Some(write_fn) = value.write_fn {
                     let fn_path = syn::parse_str::<ExprPath>(&write_fn.value())?;
+                    let idents = css_fields
+                        .iter()
+                        .map(|field| &field.bind_ident)
+                        .collect::<Vec<_>>();
                     quote! {
                         #fn_path(f, #(#idents),*)?;
                     }
                 } else {
-                    if idents.is_empty() {
+                    if css_fields.is_empty() {
                         return Err(syn::Error::new_spanned(
                             container_ident,
                             "value must have at least one field",
@@ -178,16 +154,14 @@ fn generate_write_for_fields_tokens(
                         .map(LitStr::value)
                         .unwrap_or(String::from(" "));
 
-                    gen_join_maybe_writes(idents, separator_str)
+                    css_field::gen_join_fields(css_fields, &separator_str)?
                 };
 
                 quote! {
-                    {
-                        #write_prefix
-                        #write_value
-                        #write_suffix
-                        Ok(())
-                    }
+                    #write_prefix
+                    #write_value
+                    #write_suffix
+                    Ok(())
                 }
             }
         })
@@ -200,8 +174,11 @@ fn generate_write_for_fields_tokens(
         }
 
         // check above makes sure we have a single field.
-        let value_ident = idents.first().unwrap();
-        Ok(quote! { ::russ_internal::WriteValue::write_value(#value_ident, f) })
+        let write_tokens = css_fields.first().unwrap().gen_write()?;
+        Ok(quote! {
+            #write_tokens
+            Ok(())
+        })
     }
 }
 
@@ -210,7 +187,7 @@ fn generate_function_body(input: DeriveInput) -> syn::Result<TokenStream> {
 
     Ok(match input.data {
         Data::Struct(data) => {
-            let (bind_tokens, idents) = bind_idents_for_fields(&data.fields);
+            let (bind_tokens, idents) = bind_idents_for_fields(&data.fields)?;
             let write_tokens = generate_write_for_fields_tokens(
                 args::parse_single_from_attrs(&input.attrs).transpose()?,
                 &data.fields,
@@ -231,7 +208,7 @@ fn generate_function_body(input: DeriveInput) -> syn::Result<TokenStream> {
                 .variants
                 .iter()
                 .map(|variant| -> syn::Result<TokenStream> {
-                    let (bind_tokens, idents) = bind_idents_for_fields(&variant.fields);
+                    let (bind_tokens, idents) = bind_idents_for_fields(&variant.fields)?;
                     let variant_ident = &variant.ident;
                     let write_tokens = generate_write_for_fields_tokens(
                         args::parse_single_from_attrs(&variant.attrs).transpose()?,

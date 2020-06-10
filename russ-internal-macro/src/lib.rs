@@ -7,7 +7,7 @@ use heck::KebabCase;
 use quote::quote;
 use syn::{parse_macro_input, DeriveInput};
 
-#[proc_macro_derive(CSSValue, attributes(dimension, function, keyword, value))]
+#[proc_macro_derive(CSSValue, attributes(dimension, function, keyword, value, field))]
 pub fn derive_value(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     proc_macro::TokenStream::from(match css_value::generate_write_value(input) {

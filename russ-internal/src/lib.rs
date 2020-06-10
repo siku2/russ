@@ -60,37 +60,28 @@ impl DeclarationBlock {
     }
 }
 
-pub trait MaybeWriteValue {
-    fn maybe_write_value(&self, f: &mut CSSWriter) -> WriteResult<bool>;
-}
-
-impl<T> MaybeWriteValue for T
-where
-    T: WriteValue,
-{
-    fn maybe_write_value(&self, f: &mut CSSWriter) -> WriteResult<bool> {
-        self.write_value(f).map(|_| true)
-    }
-}
-
-impl<T> MaybeWriteValue for Option<T>
-where
-    T: MaybeWriteValue,
-{
-    fn maybe_write_value(&self, f: &mut CSSWriter) -> WriteResult<bool> {
-        if let Some(v) = self {
-            v.maybe_write_value(f)
-        } else {
-            Ok(false)
-        }
-    }
-}
-
 impl<T> WriteValue for Box<T>
 where
     T: WriteValue,
 {
     fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
         self.as_ref().write_value(f)
+    }
+}
+
+impl<T> WriteValue for Vec<T>
+where
+    T: WriteValue,
+{
+    fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
+        if let Some((last, rest)) = self.split_last() {
+            for v in rest {
+                v.write_value(f)?;
+                f.write_char(',')?;
+            }
+            last.write_value(f)?;
+        }
+
+        Ok(())
     }
 }

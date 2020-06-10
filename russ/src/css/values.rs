@@ -445,11 +445,11 @@ pub enum Image {
     // Gradient(Gradient),
     // Element(),
     #[function]
-    Image(Option<ImageTags>, #[field(iter)] Vec<ImageSrc>, Option<Color>),
+    Image(Option<ImageTags>, Vec<ImageSrc>, Option<Color>),
     #[function]
-    CrossFade(#[field(iter)] Vec<CrossFadeMixingImage>, Option<Box<CrossFadeFinalImage>>),
+    CrossFade(Vec<CrossFadeMixingImage>, Option<Box<CrossFadeFinalImage>>),
     #[function]
-    ImageSet(#[field(iter)] Vec<ImageSetOption>),
+    ImageSet(Vec<ImageSetOption>),
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/integer
