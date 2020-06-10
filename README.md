@@ -1,6 +1,8 @@
 # RUSS
 
-## Features
+A *hopefully* soon-to-be css-in-Rust solution.
+
+## Goals
 
 - Type-safe. CSS is generated from Rust representations.
 - Optimized for size. CSS is stored in a compact form instead of raw strings.
