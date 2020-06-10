@@ -1,18 +1,9 @@
 [package]
-name = "russ-css-macro"
+name = "russ-internal"
 version = "0.1.0"
 authors = ["Simon Berger <simon@siku2.io>"]
 edition = "2018"
 
-[lib]
-proc-macro = true
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-heck = "0.3"
-proc-macro2 = "1.0"
-quote = "1.0"
-syn = "1.0"
-
-[dev-dependencies]
-russ-css = { path = "../russ-css" }
+russ-internal-macro = { path = "../russ-internal-macro" }

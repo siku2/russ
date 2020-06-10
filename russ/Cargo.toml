@@ -9,7 +9,7 @@ edition = "2018"
 lazy_static = "1.4"
 proc-macro-hack = "0.5"
 regex = "1.3"
-russ-css = { path = "../russ-css" }
+russ-internal = { path = "../russ-internal" }
 russ-macro = { path = "../russ-macro" }
 wasm-bindgen = "0.2"
 

@@ -24,8 +24,8 @@ pub fn derive_declaration(input: proc_macro::TokenStream) -> proc_macro::TokenSt
     let property_name_str = name_ident.to_string().to_kebab_case();
 
     proc_macro::TokenStream::from(quote! {
-        impl ::russ_css::WriteDeclaration for #name_ident {
-            fn write_property(&self, f: &mut ::russ_css::CSSWriter) -> ::russ_css::WriteResult {
+        impl ::russ_internal::WriteDeclaration for #name_ident {
+            fn write_property(&self, f: &mut ::russ_internal::CSSWriter) -> ::russ_internal::WriteResult {
                 f.write_str(#property_name_str)
             }
         }

@@ -3,7 +3,7 @@
 use super::{CSSWriter, WriteResult, WriteValue};
 use lazy_static::lazy_static;
 use regex::Regex;
-use russ_css::{CSSValue, FromVariants, VariantConstructors};
+use russ_internal::{CSSValue, FromVariants, VariantConstructors};
 use std::{fmt::Debug, io::Write};
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/angle

@@ -52,7 +52,7 @@ fn gen_join_maybe_writes<'a>(
     let maybe_write_idents = idents
         .into_iter()
         .map(|ident| quote_spanned! {ident.span()=>
-            ::russ_css::MaybeWriteValue::maybe_write_value(#ident, &mut ::russ_css::CSSWriter::new(&mut __buf))?
+            ::russ_internal::MaybeWriteValue::maybe_write_value(#ident, &mut ::russ_internal::CSSWriter::new(&mut __buf))?
         });
 
     // TODO only use this overhead if absolutely necessary! (either Option<T> or forced using arg flag)
@@ -110,7 +110,7 @@ fn generate_write_for_fields_tokens(
 
                     quote! {
                         {
-                            ::russ_css::WriteValue::write_value(#value_ident, f)?;
+                            ::russ_internal::WriteValue::write_value(#value_ident, f)?;
                             f.write_str(#unit_str)
                         }
                     }
@@ -201,7 +201,7 @@ fn generate_write_for_fields_tokens(
 
         // check above makes sure we have a single field.
         let value_ident = idents.first().unwrap();
-        Ok(quote! { ::russ_css::WriteValue::write_value(#value_ident, f) })
+        Ok(quote! { ::russ_internal::WriteValue::write_value(#value_ident, f) })
     }
 }
 
@@ -265,8 +265,8 @@ pub fn generate_write_value(input: DeriveInput) -> syn::Result<TokenStream> {
     let type_ident = input.ident.to_token_stream();
     let body = generate_function_body(input)?;
     Ok(quote! {
-        impl ::russ_css::WriteValue for #type_ident {
-            fn write_value(&self, f: &mut ::russ_css::CSSWriter) -> ::russ_css::WriteResult {
+        impl ::russ_internal::WriteValue for #type_ident {
+            fn write_value(&self, f: &mut ::russ_internal::CSSWriter) -> ::russ_internal::WriteResult {
                 #body
             }
         }

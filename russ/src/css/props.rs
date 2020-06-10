@@ -1,5 +1,5 @@
 // use super::types::{Color, Image, LengthPercentage, Position};
-// use russ_css::{CSSDeclaration, CSSValue};
+// use russ_internal::{CSSDeclaration, CSSValue};
 
 // #[derive(CSSValue)]
 // pub enum GlobalValue {
