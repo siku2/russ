@@ -93,7 +93,7 @@ fn position() {
     );
 
     assert_eq!(
-        render(Position::xy(Percentage(10.into()), Percentage(20.into()),)),
+        render(Position::xy(Percentage::from(10), Percentage::from(20))),
         "10% 20%"
     );
     assert_eq!(
