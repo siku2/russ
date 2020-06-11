@@ -60,6 +60,8 @@ fn color() {
 
 #[test]
 fn gradient() {
+    // linear
+
     assert_eq!(
         render(Gradient::linear(
             Some(Angle::deg(45)),
@@ -97,6 +99,26 @@ fn gradient() {
             (Color::hex(0x00FF00), Percentage::from(100)),
         )),
         "linear-gradient(#FF0000 0%,#FFA500 10%,#FFA500 30%,#FFFF00 50%,#FFFF00 70%,#00FF00 90%,#00FF00 100%)"
+    );
+
+    // radial
+
+    assert_eq!(
+        render(Gradient::radial_at(
+            None,
+            vec![(Color::hex(0xE66465), None)],
+            Color::hex(0x9198E5),
+        )),
+        "radial-gradient(#E66465,#9198E5)"
+    );
+
+    assert_eq!(
+        render(Gradient::radial_size(
+            GradientShapeSize::ClosestSide,
+            vec![(Color::hex(0x3F87A6), None), (Color::hex(0xEBF8E1), None)],
+            Color::hex(0xD69D3C)
+        )),
+        "radial-gradient(closest-side,#3F87A6,#EBF8E1,#D69D3C)"
     );
 }
 

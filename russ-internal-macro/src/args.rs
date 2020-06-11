@@ -191,7 +191,7 @@ where
                 let inst = Self::from_args(attr.clone(), &args)?;
                 let unused = args.iter_unused().next();
                 if let Some(unused) = unused {
-                    Err(syn::Error::new_spanned(unused, "unexpected arguments"))
+                    Err(syn::Error::new_spanned(unused, "unexpected argument"))
                 } else {
                     Ok(inst)
                 }
