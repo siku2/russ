@@ -31,15 +31,25 @@ where
         Self(c.into(), Some(l1.into()), Some(l2.into()))
     }
 }
+
 #[derive(Clone, Debug, CSSValue)]
 #[value(separator = ",")]
 pub struct LinearColorStopWithColorHint(LinearColorStop, Option<LengthPercentage>);
-impl<Stop> From<Stop> for LinearColorStopWithColorHint
+impl<S> From<(S, Option<LengthPercentage>)> for LinearColorStopWithColorHint
 where
-    Stop: Into<LinearColorStop>,
+    S: Into<LinearColorStop>,
 {
-    fn from(stop: Stop) -> Self {
-        Self(stop.into(), None)
+    fn from((stop, hint): (S, Option<LengthPercentage>)) -> Self {
+        Self(stop.into(), hint)
+    }
+}
+impl<S, H> From<(S, H)> for LinearColorStopWithColorHint
+where
+    S: Into<LinearColorStop>,
+    H: Into<LengthPercentage>,
+{
+    fn from((stop, hint): (S, H)) -> Self {
+        Self::from((stop, Some(hint.into())))
     }
 }
 
@@ -57,6 +67,19 @@ pub enum Gradient {
     Radial(),
     #[function(name = "repeating-gradient")]
     Repeating(),
+}
+impl Gradient {
+    pub fn linear<LCH, L>(angle: Option<Angle>, mut stops: Vec<LCH>, final_stop: L) -> Self
+    where
+        LCH: Into<LinearColorStopWithColorHint>,
+        L: Into<LinearColorStop>,
+    {
+        Self::Linear(
+            angle,
+            stops.drain(..).map(Into::into).collect(),
+            final_stop.into(),
+        )
+    }
 }
 
 #[derive(Clone, Debug, CSSValue)]

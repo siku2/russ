@@ -60,7 +60,44 @@ fn color() {
 
 #[test]
 fn gradient() {
-    // assert_eq!(render(Gradient::Linear(Angle::deg(45), Color::hex(0xff0000))), "linear-gradient(45deg, #ff0000 0 50%, #0000ff 50% 100%)");
+    assert_eq!(
+        render(Gradient::linear(
+            Some(Angle::deg(45)),
+            vec![(
+                (Color::hex(0xff0000), Length::Zero, Percentage::from(50)),
+                None
+            )],
+            (
+                Color::hex(0x0000ff),
+                Percentage::from(50),
+                Percentage::from(100)
+            )
+        )),
+        "linear-gradient(45deg,#FF0000 0 50%,#0000FF 50% 100%)"
+    );
+    assert_eq!(
+        render(Gradient::linear(
+            Some(Angle::turn(0.25)),
+            vec![(Color::hex(0xff0000), Percentage::from(10))],
+            Color::hex(0x0000ff),
+        )),
+        "linear-gradient(0.25turn,#FF0000,10%,#0000FF)"
+    );
+    assert_eq!(
+        render(Gradient::linear(
+            None,
+            vec![
+                ((Color::hex(0xFF0000), Percentage::from(0)), None),
+                ((Color::hex(0xFFA500), Percentage::from(10)), None),
+                ((Color::hex(0xFFA500), Percentage::from(30)), None),
+                ((Color::hex(0xFFFF00), Percentage::from(50)), None),
+                ((Color::hex(0xFFFF00), Percentage::from(70)), None),
+                ((Color::hex(0x00FF00), Percentage::from(90)), None),
+            ],
+            (Color::hex(0x00FF00), Percentage::from(100)),
+        )),
+        "linear-gradient(#FF0000 0%,#FFA500 10%,#FFA500 30%,#FFFF00 50%,#FFFF00 70%,#00FF00 90%,#00FF00 100%)"
+    );
 }
 
 #[test]

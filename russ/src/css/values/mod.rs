@@ -90,11 +90,13 @@ pub enum BlendMode {
     Luminosity,
 }
 
+pub type HexValueType = u32;
+
 // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value
 #[derive(Clone, Debug, CSSValue)]
 pub enum Color {
     #[value(prefix = "#", write_fn = "Self::write_hex")]
-    Hex(usize),
+    Hex(HexValueType),
     #[function()]
     Rgb {
         r: NumberPercentage,
@@ -116,7 +118,8 @@ pub enum Color {
     CurrentColor,
 }
 impl Color {
-    pub fn hex(hex: usize) -> Self {
+    /// Only 6 character hex colors are supported.
+    pub fn hex(hex: HexValueType) -> Self {
         Self::Hex(hex)
     }
 
@@ -170,8 +173,8 @@ impl Color {
         }
     }
 
-    fn write_hex(f: &mut CSSWriter, hex: &usize) -> WriteResult {
-        write!(f, "{:X}", hex)
+    fn write_hex(f: &mut CSSWriter, hex: &HexValueType) -> WriteResult {
+        write!(f, "{:06X}", hex)
     }
 }
 
