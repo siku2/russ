@@ -59,6 +59,11 @@ fn color() {
 }
 
 #[test]
+fn gradient() {
+    // assert_eq!(render(Gradient::Linear(Angle::deg(45), Color::hex(0xff0000))), "linear-gradient(45deg, #ff0000 0 50%, #0000ff 50% 100%)");
+}
+
+#[test]
 fn integer() {
     assert_eq!(render(Integer::from(5)), "5");
 }
