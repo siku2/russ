@@ -18,6 +18,10 @@ fn calc() {
         render(Calc::bin_div(Calc::bin_div(Length::px(100), 2), 2)),
         "calc((100px / 2) / 2)"
     );
+    assert_eq!(
+        render(Color::rgba(Calc::bin_sub(255, 5), 0, 153, 1)),
+        "rgb(calc(255 - 5),0,153,1)"
+    );
 }
 
 #[test]

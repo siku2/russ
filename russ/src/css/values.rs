@@ -5,7 +5,7 @@ use russ_internal::{CSSValue, FromVariants, VariantConstructors};
 use std::{fmt::Debug, io::Write};
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/angle
-#[derive(Clone, Copy, Debug, CSSValue, VariantConstructors)]
+#[derive(Clone, Debug, CSSValue, VariantConstructors)]
 pub enum Angle {
     #[dimension]
     Deg(Number),
@@ -21,14 +21,14 @@ pub enum Angle {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/angle-percentage
-#[derive(Clone, Copy, Debug, CSSValue, FromVariants)]
+#[derive(Clone, Debug, CSSValue, FromVariants)]
 pub enum AnglePercentage {
     #[from_variant(into)]
     Angle(Angle),
     Percentage(Percentage),
 }
 
-#[derive(Clone, Copy, Debug, CSSValue, FromVariants)]
+#[derive(Clone, Debug, CSSValue, FromVariants)]
 pub enum BasicShapeRadius {
     #[from_variant(into)]
     LengthPercentage(Length),
@@ -102,6 +102,9 @@ pub enum BlendMode {
     #[keyword]
     Luminosity,
 }
+
+// TODO perhaps use Calc<T> where T is a dimension (Angle, Length) so that CalcValue only allows that particular dimension
+//      Need to verify if this is actually valid though.
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/calc
 #[derive(Clone, Debug, CSSValue)]
@@ -213,10 +216,9 @@ where
 
 #[derive(Clone, Debug, CSSValue, FromVariants)]
 pub enum CalcValue {
-    #[from_variant(into)]
     Number(Number),
     #[value(prefix = "(", suffix = ")")]
-    Calc(Box<CalcSum>),
+    CalcSum(Box<CalcSum>),
     // dimensions
     Angle(Angle),
     Flex(Flex),
@@ -226,9 +228,17 @@ pub enum CalcValue {
     Resolution(Resolution),
     Time(Time),
 }
+impl<T> From<T> for CalcValue
+where
+    T: Into<NumberValueType>,
+{
+    fn from(v: T) -> Self {
+        Self::Number(Number::from(v))
+    }
+}
 impl From<Calc> for CalcValue {
     fn from(v: Calc) -> Self {
-        Self::Calc(Box::new(v.0))
+        Self::CalcSum(Box::new(v.0))
     }
 }
 
@@ -236,7 +246,7 @@ impl From<Calc> for CalcValue {
 #[derive(Clone, Debug, CSSValue)]
 pub enum Color {
     #[value(prefix = "#", write_fn = "Self::write_hex")]
-    Hex(Integer),
+    Hex(usize),
     #[function()]
     Rgb {
         r: NumberPercentage,
@@ -258,8 +268,8 @@ pub enum Color {
     CurrentColor,
 }
 impl Color {
-    pub fn hex(hex: impl Into<Integer>) -> Self {
-        Self::Hex(hex.into())
+    pub fn hex(hex: usize) -> Self {
+        Self::Hex(hex)
     }
 
     pub fn rgb(
@@ -312,8 +322,8 @@ impl Color {
         }
     }
 
-    fn write_hex(f: &mut CSSWriter, hex: &Integer) -> WriteResult {
-        write!(f, "{:X}", hex.0)
+    fn write_hex(f: &mut CSSWriter, hex: &usize) -> WriteResult {
+        write!(f, "{:X}", hex)
     }
 }
 
@@ -374,7 +384,7 @@ pub enum FilterFunction {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/flex_value
-#[derive(Clone, Copy, Debug, CSSValue)]
+#[derive(Clone, Debug, CSSValue)]
 #[dimension(unit = "fr")]
 pub struct Flex(pub Number);
 impl<T> From<T> for Flex
@@ -387,7 +397,7 @@ where
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/frequency
-#[derive(Clone, Copy, Debug, CSSValue, VariantConstructors)]
+#[derive(Clone, Debug, CSSValue, VariantConstructors)]
 pub enum Frequency {
     #[dimension(unit = "Hz")]
     Hz(Number),
@@ -396,7 +406,7 @@ pub enum Frequency {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/frequency-percentage
-#[derive(Clone, Copy, Debug, CSSValue, FromVariants)]
+#[derive(Clone, Debug, CSSValue, FromVariants)]
 pub enum FrequencyPercentage {
     #[from_variant(into)]
     Frequency(Frequency),
@@ -454,25 +464,31 @@ pub enum Image {
     ImageSet(Vec<ImageSetOption>),
 }
 
+pub type IntegerValueType = i32;
+
 // https://developer.mozilla.org/en-US/docs/Web/CSS/integer
-#[derive(Clone, Copy, Debug)]
-pub struct Integer(i32);
+#[derive(Clone, Debug, FromVariants)]
+pub enum Integer {
+    #[from_variant(into)]
+    Value(IntegerValueType),
+    Calc(Box<Calc>),
+}
 impl WriteValue for Integer {
     fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
-        write!(f, "{}", self.0)
+        match self {
+            Self::Value(v) => write!(f, "{}", v),
+            Self::Calc(calc) => calc.write_value(f),
+        }
     }
 }
-impl<T> From<T> for Integer
-where
-    T: Into<i32>,
-{
-    fn from(v: T) -> Self {
-        Self(v.into())
+impl From<Calc> for Integer {
+    fn from(v: Calc) -> Self {
+        Self::Calc(Box::new(v))
     }
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/length
-#[derive(Clone, Copy, Debug, CSSValue, VariantConstructors)]
+#[derive(Clone, Debug, CSSValue, VariantConstructors)]
 pub enum Length {
     #[dimension]
     Cap(Number),
@@ -525,31 +541,37 @@ pub enum Length {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/length-percentage
-#[derive(Clone, Copy, Debug, CSSValue, FromVariants)]
+#[derive(Clone, Debug, CSSValue, FromVariants)]
 pub enum LengthPercentage {
     #[from_variant(into)]
     Length(Length),
     Percentage(Percentage),
 }
 
+pub type NumberValueType = f64;
+
 // https://developer.mozilla.org/en-US/docs/Web/CSS/number
-#[derive(Clone, Copy, Debug)]
-pub struct Number(f64);
+#[derive(Clone, Debug, FromVariants)]
+pub enum Number {
+    #[from_variant(into)]
+    Value(NumberValueType),
+    Calc(Box<Calc>),
+}
 impl WriteValue for Number {
     fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
-        write!(f, "{}", self.0)
+        match self {
+            Self::Value(v) => write!(f, "{}", v),
+            Self::Calc(calc) => calc.write_value(f),
+        }
     }
 }
-impl<T> From<T> for Number
-where
-    T: Into<f64>,
-{
-    fn from(v: T) -> Self {
-        Self(v.into())
+impl From<Calc> for Number {
+    fn from(v: Calc) -> Self {
+        Self::Calc(Box::new(v))
     }
 }
 
-#[derive(Clone, Copy, Debug, CSSValue, FromVariants)]
+#[derive(Clone, Debug, CSSValue, FromVariants)]
 pub enum NumberPercentage {
     #[from_variant(into)]
     Number(Number),
@@ -557,7 +579,7 @@ pub enum NumberPercentage {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/percentage
-#[derive(Clone, Copy, Debug, CSSValue)]
+#[derive(Clone, Debug, CSSValue)]
 #[dimension(unit = "%")]
 pub struct Percentage(pub Number);
 impl<T> From<T> for Percentage
@@ -576,7 +598,7 @@ pub enum PositionHorizontalAnchor {
     #[keyword]
     Right,
 }
-#[derive(Clone, Copy, Debug, CSSValue, FromVariants)]
+#[derive(Clone, Debug, CSSValue, FromVariants)]
 pub enum PositionHorizontal {
     Anchor(PositionHorizontalAnchor),
     #[value]
@@ -608,7 +630,7 @@ pub enum PositionVerticalAnchor {
     #[keyword]
     Bottom,
 }
-#[derive(Clone, Copy, Debug, CSSValue, FromVariants)]
+#[derive(Clone, Debug, CSSValue, FromVariants)]
 pub enum PositionVertical {
     Anchor(PositionVerticalAnchor),
     #[value]
@@ -685,7 +707,7 @@ impl Position {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/ratio
-#[derive(Clone, Copy, Debug, CSSValue)]
+#[derive(Clone, Debug, CSSValue)]
 #[value(separator = "/")]
 pub struct Ratio(pub Integer, pub Integer);
 impl<W, H> From<(W, H)> for Ratio
@@ -699,7 +721,7 @@ where
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/resolution
-#[derive(Clone, Copy, Debug, CSSValue, VariantConstructors)]
+#[derive(Clone, Debug, CSSValue, VariantConstructors)]
 pub enum Resolution {
     #[dimension]
     Dpi(Number),
@@ -717,7 +739,7 @@ impl Resolution {
 // TODO shape-box
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/time
-#[derive(Clone, Copy, Debug, CSSValue, VariantConstructors)]
+#[derive(Clone, Debug, CSSValue, VariantConstructors)]
 pub enum Time {
     #[dimension]
     S(Number),
@@ -726,7 +748,7 @@ pub enum Time {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/time-percentage
-#[derive(Clone, Copy, Debug, CSSValue, FromVariants)]
+#[derive(Clone, Debug, CSSValue, FromVariants)]
 pub enum TimePercentage {
     #[from_variant(into)]
     Time(Time),
