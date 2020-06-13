@@ -68,7 +68,7 @@ where
         self.as_ref().write_value(f)
     }
 }
-// TODO maybe this implementation should only exist on Multiple<T>?
+// TODO this implementation should only exist on Multiple<>?
 impl<T> WriteValue for Vec<T>
 where
     T: WriteValue,
@@ -84,4 +84,12 @@ where
 
         Ok(())
     }
+}
+
+// TODO doc
+#[macro_export]
+macro_rules! multiple {
+    ($v:expr, $($others:expr),+ $(,)?) => (
+        ::russ::css::Multiple::__unchecked_new(::std::vec![$v, $($others),*])
+    );
 }

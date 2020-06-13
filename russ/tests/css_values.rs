@@ -1,4 +1,4 @@
-use russ::css::{values::*, CSSWriter, WriteValue};
+use russ::css::{values::*, CSSWriter, WriteValue, multiple};
 
 fn render(value: impl WriteValue) -> String {
     let mut v = Vec::new();
@@ -194,7 +194,7 @@ fn image() {
 
     // cross-fade
     assert_eq!(
-        render(Image::CrossFade(vec![
+        render(Image::CrossFade(multiple![
             (Percentage::from(20), Image::url("twenty.png")).into(),
             (None, Image::url("eighty.png")).into(),
             (None, Color::hex(0x123456)).into(),

@@ -1,14 +1,24 @@
 pub mod props;
 pub mod values;
-
-use russ_internal::{CSSValue, CSSWriter, WriteResult, WriteValue};
+pub use russ_internal::{
+    multiple, CSSDeclaration, CSSValue, CSSWriter, WriteDeclaration, WriteResult, WriteValue,
+};
 use std::{iter, ops::Deref};
 
+/// Collection of at least one item.
+/// Internally this is a vector but with some additional guards.
+///
+/// Implements `From<T>` for a single value `T`.
 #[derive(Clone, Debug, Eq, PartialEq, CSSValue)]
 pub struct Multiple<T>(Vec<T>);
 impl<T> Multiple<T> {
     fn unchecked_new(v: Vec<T>) -> Self {
         Self(v)
+    }
+
+    #[doc(hidden)]
+    pub fn __unchecked_new(v: Vec<T>) -> Self {
+        Self::unchecked_new(v)
     }
 
     pub fn new(v: Vec<T>) -> Option<Self> {
@@ -69,6 +79,10 @@ impl<T> Into<Vec<T>> for Multiple<T> {
     }
 }
 
+/// Collection of one to four items as represented by `<item>{1,4}`.
+///
+/// Implements `From` for tuples with length 1 to 4 where each item implements `Into<T>`.
+/// To use a 1-tuple use the following syntax: `(T,)`.
 #[allow(clippy::type_complexity)]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct OneToFour<T>(T, Option<(T, Option<(T, Option<T>)>)>);
