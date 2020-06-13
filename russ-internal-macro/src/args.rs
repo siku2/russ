@@ -148,14 +148,16 @@ impl Args {
         })
     }
 
-    pub fn get_kwarg_str<I: ?Sized>(&self, key: &I) -> Option<syn::Result<&LitStr>>
+    pub fn get_kwarg_str<I: ?Sized>(&self, key: &I) -> syn::Result<Option<LitStr>>
     where
         Ident: PartialEq<I>,
     {
-        self.get_kwarg(key).map(|kwarg| match &kwarg.value {
-            Lit::Str(v) => Ok(v),
-            _ => Err(syn::Error::new_spanned(kwarg, "expected string literal")),
-        })
+        self.get_kwarg(key)
+            .map(|kwarg| match &kwarg.value {
+                Lit::Str(v) => Ok(v.clone()),
+                _ => Err(syn::Error::new_spanned(kwarg, "expected string literal")),
+            })
+            .transpose()
     }
 }
 impl Parse for Args {

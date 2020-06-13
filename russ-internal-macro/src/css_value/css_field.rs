@@ -5,10 +5,41 @@ use syn::{Attribute, ExprPath, Field, Ident, LitStr, Path, Type};
 
 pub struct FieldAttr {
     attr: Attribute,
+    pub prefix: Option<LitStr>,
+    pub suffix: Option<LitStr>,
     pub write_fn: Option<LitStr>,
     pub option: bool,
     pub iter_option: bool,
     pub iter_separator: Option<LitStr>,
+}
+impl FieldAttr {
+    fn gen_write_str(s: &str) -> TokenStream {
+        quote! {
+            use ::std::io::Write;
+            f.write_str(#s)?;
+        }
+    }
+
+    fn gen_write_separator(attr: &Option<FieldAttr>) -> TokenStream {
+        let iter_separator = attr
+            .as_ref()
+            .and_then(|attr| attr.iter_separator.as_ref())
+            .map(|sep| sep.value())
+            .unwrap_or_else(|| String::from(","));
+        Self::gen_write_str(&iter_separator)
+    }
+
+    fn gen_write_prefix(attr: &Option<FieldAttr>) -> Option<TokenStream> {
+        attr.as_ref()
+            .and_then(|attr| attr.prefix.as_ref())
+            .map(|v| Self::gen_write_str(&v.value()))
+    }
+
+    fn gen_write_suffix(attr: &Option<FieldAttr>) -> Option<TokenStream> {
+        attr.as_ref()
+            .and_then(|attr| attr.suffix.as_ref())
+            .map(|v| Self::gen_write_str(&v.value()))
+    }
 }
 impl FromArgs for FieldAttr {
     fn attr_path() -> &'static str {
@@ -18,10 +49,12 @@ impl FromArgs for FieldAttr {
     fn from_args(attr: Attribute, args: &Args) -> syn::Result<Self> {
         Ok(Self {
             attr,
-            write_fn: args.get_kwarg_str("write_fn").transpose()?.cloned(),
+            prefix: args.get_kwarg_str("prefix")?,
+            suffix: args.get_kwarg_str("suffix")?,
+            write_fn: args.get_kwarg_str("write_fn")?,
             option: args.has_flag("option"),
             iter_option: args.has_flag("iter_option"),
-            iter_separator: args.get_kwarg_str("iter_separator").transpose()?.cloned(),
+            iter_separator: args.get_kwarg_str("iter_separator")?,
         })
     }
 }
@@ -52,19 +85,14 @@ pub struct CSSField {
     pub bind_ident: Ident,
     pub attr: Option<FieldAttr>,
     assume_option: bool,
-    iter_separator: String,
 }
 impl CSSField {
     pub fn from_field(bind_ident: Ident, field: &Field) -> syn::Result<Self> {
         let assume_option;
-        let mut iter_separator = String::from(",");
 
         let attr: Option<FieldAttr> = args::parse_single_from_attrs(&field.attrs).transpose()?;
         if let Some(attr) = &attr {
             assume_option = attr.option;
-            if let Some(sep) = &attr.iter_separator {
-                iter_separator = sep.value();
-            }
         } else {
             assume_option = type_is_option(&field.ty);
         }
@@ -73,16 +101,12 @@ impl CSSField {
             bind_ident,
             attr,
             assume_option,
-            iter_separator,
         })
     }
 
-    fn gen_write_value(&self, value_ident: &Ident) -> syn::Result<TokenStream> {
+    fn _gen_write_inner_value(&self, value_ident: &Ident) -> syn::Result<TokenStream> {
         let Self {
-            bind_ident,
-            attr,
-            iter_separator,
-            ..
+            bind_ident, attr, ..
         } = self;
 
         if let Some(FieldAttr {
@@ -95,17 +119,13 @@ impl CSSField {
                 #fn_path(f, #value_ident)?;
             });
         }
-
         if matches!(
             attr,
             Some(FieldAttr {
                 iter_option: true, ..
             })
         ) {
-            let write_separator = quote! {
-                use ::std::io::Write;
-                f.write_str(#iter_separator)?;
-            };
+            let write_separator = FieldAttr::gen_write_separator(&attr);
 
             Ok(quote_spanned! {bind_ident.span()=>
                 let mut __v_iter = ::std::iter::IntoIterator::into_iter(#value_ident);
@@ -130,6 +150,18 @@ impl CSSField {
         }
     }
 
+    fn gen_write_value(&self, value_ident: &Ident) -> syn::Result<TokenStream> {
+        let write_value = self._gen_write_inner_value(value_ident)?;
+        let write_prefix = FieldAttr::gen_write_prefix(&self.attr);
+        let write_suffix = FieldAttr::gen_write_suffix(&self.attr);
+
+        Ok(quote! {
+            #write_prefix
+            #write_value
+            #write_suffix
+        })
+    }
+
     fn gen_write_with_before_write(&self, tokens: TokenStream) -> syn::Result<TokenStream> {
         let Self {
             bind_ident,
@@ -140,11 +172,12 @@ impl CSSField {
         if *assume_option {
             let ident = Ident::new("__v", bind_ident.span());
             let write_value = self.gen_write_value(&ident)?;
+            // using a semicolon at the end of the if statement to suppress `clippy::suspicious_else_formatting`
             Ok(quote_spanned! {bind_ident.span()=>
                 if let ::std::option::Option::Some(#ident) = #bind_ident {
                     #tokens
                     #write_value
-                }
+                };
             })
         } else {
             let write_value = self.gen_write_value(bind_ident)?;
@@ -199,7 +232,7 @@ pub fn gen_join_fields_with_write_separator(
             #write_separator
         } else {
             __wrote_first = true;
-        }
+        };
     };
     let write_values = fields
         .iter()

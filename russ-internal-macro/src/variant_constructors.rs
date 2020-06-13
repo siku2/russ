@@ -18,7 +18,7 @@ impl FromArgs for VariantConstructorAttr {
         Ok(Self {
             attr,
             skip: args.has_flag("skip"),
-            name: args.get_kwarg_str("name").transpose()?.cloned(),
+            name: args.get_kwarg_str("name")?,
         })
     }
 }

@@ -65,10 +65,7 @@ fn gradient() {
     assert_eq!(
         render(Gradient::linear(
             Some(Angle::deg(45)),
-            vec![(
-                (Color::hex(0xff0000), Length::Zero, Percentage::from(50)),
-                None
-            )],
+            vec![(Color::hex(0xff0000), Length::Zero, Percentage::from(50))],
             (
                 Color::hex(0x0000ff),
                 Percentage::from(50),
@@ -80,7 +77,10 @@ fn gradient() {
     assert_eq!(
         render(Gradient::linear(
             Some(Angle::turn(0.25)),
-            vec![(Color::hex(0xff0000), Percentage::from(10))],
+            vec![LinearColorStopHint::hint(
+                Color::hex(0xff0000),
+                Percentage::from(10)
+            )],
             Color::hex(0x0000ff),
         )),
         "linear-gradient(0.25turn,#FF0000,10%,#0000FF)"
@@ -89,12 +89,12 @@ fn gradient() {
         render(Gradient::linear(
             None,
             vec![
-                ((Color::hex(0xFF0000), Percentage::from(0)), None),
-                ((Color::hex(0xFFA500), Percentage::from(10)), None),
-                ((Color::hex(0xFFA500), Percentage::from(30)), None),
-                ((Color::hex(0xFFFF00), Percentage::from(50)), None),
-                ((Color::hex(0xFFFF00), Percentage::from(70)), None),
-                ((Color::hex(0x00FF00), Percentage::from(90)), None),
+                (Color::hex(0xFF0000), Percentage::from(0)),
+                (Color::hex(0xFFA500), Percentage::from(10)),
+                (Color::hex(0xFFA500), Percentage::from(30)),
+                (Color::hex(0xFFFF00), Percentage::from(50)),
+                (Color::hex(0xFFFF00), Percentage::from(70)),
+                (Color::hex(0x00FF00), Percentage::from(90)),
             ],
             (Color::hex(0x00FF00), Percentage::from(100)),
         )),
@@ -104,21 +104,59 @@ fn gradient() {
     // radial
 
     assert_eq!(
-        render(Gradient::radial_at(
+        render(Gradient::radial(
             None,
-            vec![(Color::hex(0xE66465), None)],
+            None,
+            vec![Color::hex(0xE66465)],
             Color::hex(0x9198E5),
         )),
         "radial-gradient(#E66465,#9198E5)"
     );
 
     assert_eq!(
-        render(Gradient::radial_size(
-            GradientShapeSize::ClosestSide,
-            vec![(Color::hex(0x3F87A6), None), (Color::hex(0xEBF8E1), None)],
-            Color::hex(0xD69D3C)
+        render(Gradient::radial(
+            Some(GradientShapeSize::ClosestSide),
+            None,
+            vec![Color::hex(0x3F87A6), Color::hex(0xEBF8E1)],
+            Color::hex(0xD69D3C),
         )),
         "radial-gradient(closest-side,#3F87A6,#EBF8E1,#D69D3C)"
+    );
+
+    assert_eq!(
+        render(Gradient::radial(
+            None,
+            Some(Position::x(Percentage::from(100))),
+            vec![
+                LinearColorStopHint::from(Color::hex(0x333333)),
+                LinearColorStopHint::from((Color::hex(0x333333), Percentage::from(50))),
+                LinearColorStopHint::from((Color::hex(0xEEEEEE), Percentage::from(75))),
+            ],
+            (Color::hex(0x333333), Percentage::from(75)),
+        )),
+        "radial-gradient(at 100%,#333333,#333333 50%,#EEEEEE 75%,#333333 75%)"
+    );
+
+    assert_eq!(
+        render(Gradient::radial_ellipse(
+            Some(GradientShapeSize::FarthestCorner),
+            Some(Position::xy(Length::px(40), Length::px(40))),
+            vec![(Color::hex(0xFF3355), Percentage::from(0))],
+            (Color::hex(0x4433EE), Percentage::from(100)),
+        )),
+        "radial-gradient(ellipse farthest-corner at 40px 40px,#FF3355 0%,#4433EE 100%)"
+    );
+
+    // conic
+
+    assert_eq!(
+        render(Gradient::conic(
+            Some(Angle::Zero),
+            Some(Position::center()),
+            vec![Color::hex(0xFF0066)],
+            Color::hex(0xFFDF00),
+        )),
+        "conic-gradient(from 0 at center,#FF0066,#FFDF00)"
     );
 }
 

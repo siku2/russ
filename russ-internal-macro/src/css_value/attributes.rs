@@ -16,7 +16,7 @@ impl FromArgs for DimensionAttr {
         Ok(Self {
             attr,
             zero: args.has_flag("zero"),
-            unit: args.get_kwarg_str("unit").transpose()?.cloned(),
+            unit: args.get_kwarg_str("unit")?,
         })
     }
 }
@@ -39,8 +39,8 @@ impl FromArgs for FunctionAttr {
     fn from_args(attr: Attribute, args: &Args) -> syn::Result<Self> {
         Ok(Self {
             attr,
-            name: args.get_kwarg_str("name").transpose()?.cloned(),
-            separator: args.get_kwarg_str("separator").transpose()?.cloned(),
+            name: args.get_kwarg_str("name")?,
+            separator: args.get_kwarg_str("separator")?,
         })
     }
 }
@@ -62,7 +62,7 @@ impl FromArgs for KeywordAttr {
     fn from_args(attr: Attribute, args: &Args) -> syn::Result<Self> {
         Ok(Self {
             attr,
-            value: args.get_kwarg_str("value").transpose()?.cloned(),
+            value: args.get_kwarg_str("value")?,
         })
     }
 }
@@ -87,10 +87,10 @@ impl FromArgs for ValueAttr {
     fn from_args(attr: Attribute, args: &Args) -> syn::Result<Self> {
         Ok(Self {
             attr,
-            prefix: args.get_kwarg_str("prefix").transpose()?.cloned(),
-            suffix: args.get_kwarg_str("suffix").transpose()?.cloned(),
-            separator: args.get_kwarg_str("separator").transpose()?.cloned(),
-            write_fn: args.get_kwarg_str("write_fn").transpose()?.cloned(),
+            prefix: args.get_kwarg_str("prefix")?,
+            suffix: args.get_kwarg_str("suffix")?,
+            separator: args.get_kwarg_str("separator")?,
+            write_fn: args.get_kwarg_str("write_fn")?,
         })
     }
 }

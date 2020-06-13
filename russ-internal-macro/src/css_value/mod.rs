@@ -7,7 +7,10 @@ use css_field::CSSField;
 use heck::KebabCase;
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
-use syn::{spanned::Spanned, Data, DeriveInput, ExprPath, Fields, Ident, LitStr};
+use syn::{
+    parse_quote, spanned::Spanned, Data, DeriveInput, ExprPath, Fields, GenericParam, Generics,
+    Ident, LitStr,
+};
 
 fn is_fields_single_unnamed(fields: &Fields) -> bool {
     match fields {
@@ -182,10 +185,10 @@ fn generate_write_for_fields_tokens(
     }
 }
 
-fn generate_function_body(input: DeriveInput) -> syn::Result<TokenStream> {
+fn generate_function_body(input: &DeriveInput) -> syn::Result<TokenStream> {
     let name_ident = &input.ident;
 
-    Ok(match input.data {
+    Ok(match &input.data {
         Data::Struct(data) => {
             let (bind_tokens, idents) = bind_idents_for_fields(&data.fields)?;
             let write_tokens = generate_write_for_fields_tokens(
@@ -238,11 +241,23 @@ fn generate_function_body(input: DeriveInput) -> syn::Result<TokenStream> {
     })
 }
 
-pub fn generate_write_value(input: DeriveInput) -> syn::Result<TokenStream> {
+fn add_trait_bounds(generics: &mut Generics) {
+    for param in &mut generics.params {
+        if let GenericParam::Type(type_param) = param {
+            type_param
+                .bounds
+                .push(parse_quote!(::russ_internal::WriteValue));
+        }
+    }
+}
+
+pub fn generate_write_value(mut input: DeriveInput) -> syn::Result<TokenStream> {
     let type_ident = input.ident.to_token_stream();
-    let body = generate_function_body(input)?;
+    add_trait_bounds(&mut input.generics);
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+    let body = generate_function_body(&input)?;
     Ok(quote! {
-        impl ::russ_internal::WriteValue for #type_ident {
+        impl #impl_generics ::russ_internal::WriteValue for #type_ident #ty_generics #where_clause {
             fn write_value(&self, f: &mut ::russ_internal::CSSWriter) -> ::russ_internal::WriteResult {
                 #body
             }
