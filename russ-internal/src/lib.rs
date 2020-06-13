@@ -41,7 +41,7 @@ pub struct Declaration {
     inner: Box<dyn WriteDeclaration>,
 }
 impl Declaration {
-    fn write_declaration(&self, f: &mut CSSWriter) -> WriteResult {
+    pub fn write_declaration(&self, f: &mut CSSWriter) -> WriteResult {
         self.inner.write_property(f)?;
         f.write_char(':')?;
         self.inner.write_value(f)
@@ -50,7 +50,7 @@ impl Declaration {
 
 pub struct DeclarationBlock(Vec<Declaration>);
 impl DeclarationBlock {
-    fn write_block(&self, f: &mut CSSWriter) -> WriteResult {
+    pub fn write_block(&self, f: &mut CSSWriter) -> WriteResult {
         f.write_char('{')?;
         for decl in &self.0 {
             decl.write_declaration(f)?;
@@ -68,7 +68,7 @@ where
         self.as_ref().write_value(f)
     }
 }
-
+// TODO maybe this implementation should only exist on Multiple<T>?
 impl<T> WriteValue for Vec<T>
 where
     T: WriteValue,

@@ -2,6 +2,7 @@ use super::{
     Angle, AnglePercentage, CSSString, Color, LengthPercentage, Percentage, Position, Resolution,
     Url,
 };
+use crate::css::Multiple;
 use russ_internal::{CSSValue, FromVariants};
 
 #[derive(Clone, Debug, CSSValue)]
@@ -324,9 +325,9 @@ pub enum Image {
     #[function]
     Image(Option<ImageTags>, Vec<ImageSrc>, Option<Color>),
     #[function]
-    ImageSet(Vec<ImageSetOption>),
+    ImageSet(Multiple<ImageSetOption>),
     #[function]
-    CrossFade(Vec<CrossFadeImage>),
+    CrossFade(Multiple<CrossFadeImage>),
 }
 impl Image {
     pub fn url(url: impl Into<Url>) -> Self {
@@ -341,20 +342,30 @@ impl Image {
         Self::Image(tags, sources.into_iter().map(Into::into).collect(), color)
     }
 
+    /// # Panics
+    ///
+    /// If `images` contains zero elements.
     pub fn image_set<S, IT>(images: IT) -> Self
     where
         IT: IntoIterator<Item = S>,
         S: Into<ImageSetOption>,
     {
-        Self::ImageSet(images.into_iter().map(Into::into).collect())
+        Self::ImageSet(Multiple::new_must(
+            images.into_iter().map(Into::into).collect(),
+        ))
     }
 
+    /// # Panics
+    ///
+    /// If `images` contains zero elements.
     pub fn cross_fade<S, IT>(images: IT) -> Self
     where
         IT: IntoIterator<Item = S>,
         S: Into<CrossFadeImage>,
     {
-        Self::CrossFade(images.into_iter().map(Into::into).collect())
+        Self::CrossFade(Multiple::new_must(
+            images.into_iter().map(Into::into).collect(),
+        ))
     }
 }
 impl From<Gradient> for Image {

@@ -41,7 +41,7 @@ impl Calc {
 }
 
 #[derive(Clone, Debug, CSSValue)]
-enum CalcSumPart {
+pub enum CalcSumPart {
     #[value(prefix = " + ")]
     Add(CalcProduct),
     #[value(prefix = " - ")]
@@ -49,7 +49,7 @@ enum CalcSumPart {
 }
 
 #[derive(Clone, Debug)]
-pub struct CalcSum(CalcProduct, Vec<CalcSumPart>);
+pub struct CalcSum(pub CalcProduct, pub Vec<CalcSumPart>);
 impl CalcSum {
     pub fn unary(value: impl Into<CalcProduct>) -> Self {
         Self(value.into(), Vec::new())
@@ -78,7 +78,7 @@ where
 }
 
 #[derive(Clone, Debug, CSSValue)]
-enum CalcProductPart {
+pub enum CalcProductPart {
     #[value(prefix = " * ")]
     Mul(CalcValue),
     #[value(prefix = " / ")]
@@ -86,7 +86,7 @@ enum CalcProductPart {
 }
 
 #[derive(Clone, Debug)]
-pub struct CalcProduct(CalcValue, Vec<CalcProductPart>);
+pub struct CalcProduct(pub CalcValue, pub Vec<CalcProductPart>);
 impl CalcProduct {
     pub fn unary(value: impl Into<CalcValue>) -> Self {
         Self(value.into(), Vec::new())

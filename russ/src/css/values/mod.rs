@@ -6,13 +6,15 @@ mod dimensions;
 mod image;
 mod position;
 
-use super::{CSSWriter, WriteResult};
+use super::{Multiple, OneToFour};
 pub use basic::*;
 pub use calc::*;
 pub use dimensions::*;
 pub use image::*;
 pub use position::*;
-use russ_internal::{CSSValue, FromVariants, VariantConstructors, WriteValue};
+use russ_internal::{
+    CSSValue, CSSWriter, FromVariants, VariantConstructors, WriteResult, WriteValue,
+};
 use std::io::Write;
 
 #[derive(Clone, Debug, CSSValue, FromVariants)]
@@ -33,10 +35,7 @@ pub enum BasicShapeRadius {
 pub enum BasicShape {
     #[function(separator = " ")]
     Inset(
-        LengthPercentage,
-        Option<LengthPercentage>,
-        Option<LengthPercentage>,
-        Option<LengthPercentage>,
+        OneToFour<LengthPercentage>,
         // TODO Optional<borderradius>
     ),
     #[function(separator = " ")]
@@ -54,7 +53,7 @@ pub enum BasicShape {
     #[function]
     Polygon(
         #[field(write_fn = "Self::write_polygon_vertices")]
-        Vec<(LengthPercentage, LengthPercentage)>,
+        Multiple<(LengthPercentage, LengthPercentage)>,
     ),
     // TODO fill-rule
     #[function]
@@ -75,10 +74,18 @@ impl BasicShape {
         f: &mut CSSWriter,
         vertices: &[(LengthPercentage, LengthPercentage)],
     ) -> WriteResult {
-        for (x, y) in vertices {
+        let write_vertex = |f: &mut CSSWriter, (x, y): &(LengthPercentage, LengthPercentage)| {
             x.write_value(f)?;
             f.write_str(" ")?;
-            y.write_value(f)?;
+            y.write_value(f)
+        };
+
+        if let Some((first, others)) = vertices.split_first() {
+            write_vertex(f, first)?;
+            for v in others {
+                f.write_char(',')?;
+                write_vertex(f, v)?;
+            }
         }
         Ok(())
     }
