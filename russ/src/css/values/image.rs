@@ -267,23 +267,52 @@ pub enum ImageTags {
 #[derive(Clone, Debug, CSSValue, FromVariants)]
 pub enum ImageSrc {
     Url(Url),
+    #[from_variant(into)]
     Str(CSSString),
 }
 
 #[derive(Clone, Debug, CSSValue)]
 #[value]
-pub struct CrossFadeMixingImage(Option<Percentage>, Image);
+pub struct ImageSetOption(pub ImageSrc, pub Resolution);
+impl<Src> From<(Src, Resolution)> for ImageSetOption
+where
+    Src: Into<ImageSrc>,
+{
+    fn from((src, res): (Src, Resolution)) -> Self {
+        Self(src.into(), res)
+    }
+}
+
 #[derive(Clone, Debug, CSSValue, FromVariants)]
-pub enum CrossFadeFinalImage {
-    Image(Image),
+pub enum CrossFadeImageColor {
+    Image(Box<Image>),
     Color(Color),
+}
+impl From<Image> for CrossFadeImageColor {
+    fn from(v: Image) -> Self {
+        Self::Image(Box::new(v))
+    }
 }
 
 #[derive(Clone, Debug, CSSValue)]
 #[value]
-pub struct ImageSetOption(Image, Resolution);
-
-// TODO test image
+pub struct CrossFadeImage(pub Option<Percentage>, pub CrossFadeImageColor);
+impl<Img> From<(Option<Percentage>, Img)> for CrossFadeImage
+where
+    Img: Into<CrossFadeImageColor>,
+{
+    fn from((p, img): (Option<Percentage>, Img)) -> Self {
+        Self(p, img.into())
+    }
+}
+impl<Img> From<(Percentage, Img)> for CrossFadeImage
+where
+    Img: Into<CrossFadeImageColor>,
+{
+    fn from((p, img): (Percentage, Img)) -> Self {
+        Self(Some(p), img.into())
+    }
+}
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/image
 #[derive(Clone, Debug, CSSValue, FromVariants)]
@@ -295,7 +324,38 @@ pub enum Image {
     #[function]
     Image(Option<ImageTags>, Vec<ImageSrc>, Option<Color>),
     #[function]
-    CrossFade(Vec<CrossFadeMixingImage>, Option<Box<CrossFadeFinalImage>>),
-    #[function]
     ImageSet(Vec<ImageSetOption>),
+    #[function]
+    CrossFade(Vec<CrossFadeImage>),
+}
+impl Image {
+    pub fn url(url: impl Into<Url>) -> Self {
+        Self::Url(url.into())
+    }
+    pub fn image<Src, IT>(tags: Option<ImageTags>, sources: IT, color: Option<Color>) -> Self
+    where
+        IT: IntoIterator<Item = Src>,
+        Src: Into<ImageSrc>,
+    {
+        Self::Image(tags, sources.into_iter().map(Into::into).collect(), color)
+    }
+    pub fn image_set<S, IT>(images: IT) -> Self
+    where
+        IT: IntoIterator<Item = S>,
+        S: Into<ImageSetOption>,
+    {
+        Self::ImageSet(images.into_iter().map(Into::into).collect())
+    }
+    pub fn cross_fade<S, IT>(images: IT) -> Self
+    where
+        IT: IntoIterator<Item = S>,
+        S: Into<CrossFadeImage>,
+    {
+        Self::CrossFade(images.into_iter().map(Into::into).collect())
+    }
+}
+impl From<Gradient> for Image {
+    fn from(v: Gradient) -> Self {
+        Self::Gradient(Box::new(v))
+    }
 }

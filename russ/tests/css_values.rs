@@ -161,6 +161,49 @@ fn gradient() {
 }
 
 #[test]
+fn image() {
+    // url
+    assert_eq!(render(Image::url("test.jpg")), "url(\"test.jpg\")");
+
+    // image
+    assert_eq!(
+        render(Image::image(
+            None,
+            vec!["sprites.png#xywh=10,30,60,20"],
+            Some(Color::hex(0x000000)),
+        )),
+        "image(\"sprites.png#xywh=10,30,60,20\",#000000)"
+    );
+
+    // image-set
+    assert_eq!(
+        render(Image::image_set(vec![
+            ("test.jpg", Resolution::x(1)),
+            ("test-2x.jpg", Resolution::x(2)),
+        ])),
+        "image-set(\"test.jpg\" 1dppx,\"test-2x.jpg\" 2dppx)"
+    );
+    assert_eq!(
+        render(Image::image_set(vec![
+            ("foo.png", Resolution::x(1)),
+            ("foo-2x.png", Resolution::x(2)),
+            ("foo-print.png", Resolution::dpi(600)),
+        ])),
+        "image-set(\"foo.png\" 1dppx,\"foo-2x.png\" 2dppx,\"foo-print.png\" 600dpi)"
+    );
+
+    // cross-fade
+    assert_eq!(
+        render(Image::CrossFade(vec![
+            (Percentage::from(20), Image::url("twenty.png")).into(),
+            (None, Image::url("eighty.png")).into(),
+            (None, Color::hex(0x123456)).into(),
+        ])),
+        "cross-fade(20% url(\"twenty.png\"),url(\"eighty.png\"),#123456)"
+    );
+}
+
+#[test]
 fn integer() {
     assert_eq!(render(Integer::from(5)), "5");
 }
