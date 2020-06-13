@@ -13,6 +13,7 @@ A *hopefully* soon-to-be css-in-Rust solution.
 1. Implement Rust equivalents for all basic CSS types (<https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Values_and_Units>).
 2. Support for the most common CSS properties (<https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Properties_Reference>)
 3. Add bindings for Yew. At this point the library starts becoming useable.
+3.1. Add documentation!
 4. Add a `css_value!` macro which converts css values into their rust equivalents from step 1.
    This should support dynamic expressions like `css_value! { {self.props.width}rem }`
 5. Add support for all current css properties.
