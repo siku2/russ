@@ -1,5 +1,5 @@
-use super::values::{Color, Image, LengthPercentage, Position};
-use russ_internal::{CSSDeclaration, CSSValue};
+use super::values::{CSSBox, Color, Image, LengthPercentage, Position};
+use russ_internal::{CSSDeclaration, CSSValue, FromVariants};
 
 #[derive(CSSValue)]
 pub enum GlobalValue {
@@ -53,14 +53,10 @@ pub struct BackgroundColor(Color);
 #[derive(CSSDeclaration, CSSValue)]
 pub struct BackgroundAttachment(Vec<Attachment>);
 
-#[derive(CSSValue)]
+// https://drafts.csswg.org/css-backgrounds-4/#typedef-box
+#[derive(CSSValue, FromVariants)]
 pub enum BackgroundClipItem {
-    #[keyword]
-    BorderBox,
-    #[keyword]
-    PaddingBox,
-    #[keyword]
-    ContentBox,
+    Box(CSSBox),
     // still experimental
     #[keyword]
     Border,
@@ -76,19 +72,9 @@ pub struct BackgroundClip(Vec<BackgroundClipItem>);
 #[derive(CSSDeclaration, CSSValue)]
 pub struct BackgroundImage(#[field(iter_option)] Vec<Option<Image>>);
 
-#[derive(CSSValue)]
-pub enum BackgroundOriginItem {
-    #[keyword]
-    BorderBox,
-    #[keyword]
-    PaddingBox,
-    #[keyword]
-    ContentBox,
-}
-
 // https://developer.mozilla.org/en-US/docs/Web/CSS/background-origin
 #[derive(CSSDeclaration, CSSValue)]
-pub struct BackgroundOrigin(Vec<BackgroundOriginItem>);
+pub struct BackgroundOrigin(Vec<CSSBox>);
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/background-position
 #[derive(CSSDeclaration, CSSValue)]

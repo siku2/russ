@@ -13,9 +13,9 @@ pub struct FieldAttr {
     pub iter_separator: Option<LitStr>,
 }
 impl FieldAttr {
+    /// Assumes `io::Write` is in scope.
     fn gen_write_str(s: &str) -> TokenStream {
         quote! {
-            use ::std::io::Write;
             f.write_str(#s)?;
         }
     }
@@ -79,7 +79,7 @@ fn type_is_option(ty: &Type) -> bool {
     }
 }
 
-// TODO handle empty vectors
+// TODO empty vectors can cause problems
 
 pub struct CSSField {
     pub bind_ident: Ident,
@@ -104,6 +104,7 @@ impl CSSField {
         })
     }
 
+    /// Assumes `io::Write` is in scope.
     fn _gen_write_inner_value(&self, value_ident: &Ident) -> syn::Result<TokenStream> {
         let Self {
             bind_ident, attr, ..
@@ -150,6 +151,7 @@ impl CSSField {
         }
     }
 
+    /// Assumes `io::Write` is in scope.
     fn gen_write_value(&self, value_ident: &Ident) -> syn::Result<TokenStream> {
         let write_value = self._gen_write_inner_value(value_ident)?;
         let write_prefix = FieldAttr::gen_write_prefix(&self.attr);
@@ -162,6 +164,7 @@ impl CSSField {
         })
     }
 
+    /// Assumes `io::Write` is in scope.
     fn gen_write_with_before_write(&self, tokens: TokenStream) -> syn::Result<TokenStream> {
         let Self {
             bind_ident,
@@ -188,21 +191,23 @@ impl CSSField {
         }
     }
 
+    /// Assumes `io::Write` is in scope.
     pub fn gen_write(&self) -> syn::Result<TokenStream> {
         self.gen_write_with_before_write(quote! {})
     }
 }
 
+/// Assumes `io::Write` is in scope.
 pub fn gen_join_fields(fields: &[CSSField], separator: &str) -> syn::Result<TokenStream> {
     gen_join_fields_with_write_separator(
         fields,
         quote! {
-            use ::std::io::Write;
             f.write_str(#separator)?;
         },
     )
 }
 
+/// Assumes `io::Write` is in scope.
 pub fn gen_join_fields_with_write_separator(
     fields: &[CSSField],
     write_separator: impl ToTokens,

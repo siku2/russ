@@ -319,7 +319,7 @@ where
 pub enum Image {
     Url(Url),
     Gradient(Box<Gradient>),
-    // TODO
+    // TODO add element variant
     // Element(),
     #[function]
     Image(Option<ImageTags>, Vec<ImageSrc>, Option<Color>),
@@ -332,6 +332,7 @@ impl Image {
     pub fn url(url: impl Into<Url>) -> Self {
         Self::Url(url.into())
     }
+
     pub fn image<Src, IT>(tags: Option<ImageTags>, sources: IT, color: Option<Color>) -> Self
     where
         IT: IntoIterator<Item = Src>,
@@ -339,6 +340,7 @@ impl Image {
     {
         Self::Image(tags, sources.into_iter().map(Into::into).collect(), color)
     }
+
     pub fn image_set<S, IT>(images: IT) -> Self
     where
         IT: IntoIterator<Item = S>,
@@ -346,6 +348,7 @@ impl Image {
     {
         Self::ImageSet(images.into_iter().map(Into::into).collect())
     }
+
     pub fn cross_fade<S, IT>(images: IT) -> Self
     where
         IT: IntoIterator<Item = S>,

@@ -88,6 +88,7 @@ fn generate_write_for_fields_tokens(
                     let write_value = css_fields.first().unwrap().gen_write()?;
 
                     quote! {
+                        use ::std::io::Write;
                         #write_value
                         f.write_str(#unit_str)
                     }
@@ -107,6 +108,7 @@ fn generate_write_for_fields_tokens(
                     .unwrap_or_else(|| container_ident.to_string().to_kebab_case());
 
                 quote! {
+                    use ::std::io::Write;
                     f.write_str(#fn_name_str)?;
                     f.write_char('(')?;
                     #write_arguments
@@ -161,6 +163,7 @@ fn generate_write_for_fields_tokens(
                 };
 
                 quote! {
+                    use ::std::io::Write;
                     #write_prefix
                     #write_value
                     #write_suffix
@@ -179,6 +182,7 @@ fn generate_write_for_fields_tokens(
         // check above makes sure we have a single field.
         let write_tokens = css_fields.first().unwrap().gen_write()?;
         Ok(quote! {
+            use ::std::io::Write;
             #write_tokens
             Ok(())
         })

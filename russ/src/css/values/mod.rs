@@ -12,7 +12,7 @@ pub use calc::*;
 pub use dimensions::*;
 pub use image::*;
 pub use position::*;
-use russ_internal::{CSSValue, FromVariants, VariantConstructors};
+use russ_internal::{CSSValue, FromVariants, VariantConstructors, WriteValue};
 use std::io::Write;
 
 #[derive(Clone, Debug, CSSValue, FromVariants)]
@@ -26,11 +26,12 @@ pub enum BasicShapeRadius {
     FarthestSide,
 }
 
+// TODO BasicShape could use some refactoring
+
 // https://developer.mozilla.org/en-US/docs/Web/CSS/basic-shape
-// #[derive(Clone, Debug, CSSValue)]
+#[derive(Clone, Debug, CSSValue)]
 pub enum BasicShape {
-    // TODO separate arguments with SPACE
-    // #[function]
+    #[function(separator = " ")]
     Inset(
         LengthPercentage,
         Option<LengthPercentage>,
@@ -38,19 +39,49 @@ pub enum BasicShape {
         Option<LengthPercentage>,
         // TODO Optional<borderradius>
     ),
-    // #[function]
-    Circle(Option<BasicShapeRadius>, Option<Position>),
-    // #[function]
+    #[function(separator = " ")]
+    Circle(
+        Option<BasicShapeRadius>,
+        #[field(option, prefix = "at ")] Option<Position>,
+    ),
+    #[function(separator = " ")]
     Ellipse(
+        #[field(option, write_fn = "Self::write_ellipse_shape")]
         Option<(BasicShapeRadius, BasicShapeRadius)>,
-        Option<Position>,
+        #[field(option, prefix = "at ")] Option<Position>,
     ),
     // TODO fill-rule
-    // #[function]
-    Polygon(Vec<(LengthPercentage, LengthPercentage)>),
+    #[function]
+    Polygon(
+        #[field(write_fn = "Self::write_polygon_vertices")]
+        Vec<(LengthPercentage, LengthPercentage)>,
+    ),
     // TODO fill-rule
-    // #[function]
+    #[function]
     Path(CSSString),
+}
+impl BasicShape {
+    fn write_ellipse_shape(
+        f: &mut CSSWriter,
+        (rx, ry): &(BasicShapeRadius, BasicShapeRadius),
+    ) -> WriteResult {
+        rx.write_value(f)?;
+        f.write_str(" ")?;
+        ry.write_value(f)?;
+        Ok(())
+    }
+
+    fn write_polygon_vertices(
+        f: &mut CSSWriter,
+        vertices: &[(LengthPercentage, LengthPercentage)],
+    ) -> WriteResult {
+        for (x, y) in vertices {
+            x.write_value(f)?;
+            f.write_str(" ")?;
+            y.write_value(f)?;
+        }
+        Ok(())
+    }
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/blend-mode
@@ -178,6 +209,33 @@ impl Color {
     }
 }
 
+// https://drafts.csswg.org/css-backgrounds-3/#typedef-box
+#[derive(Clone, Debug, CSSValue, VariantConstructors)]
+pub enum CSSBox {
+    #[keyword]
+    BorderBox,
+    #[keyword]
+    PaddingBox,
+    #[keyword]
+    ContentBox,
+}
+
+// https://drafts.csswg.org/css-easing/#typedef-easing-function
+#[derive(Clone, Debug, CSSValue, VariantConstructors)]
+pub enum EasingFunction {
+    #[keyword]
+    Ease,
+    #[keyword]
+    EaseIn,
+    #[keyword]
+    EaseOut,
+    #[keyword]
+    EaseInOut,
+
+    #[function]
+    CubicBezier(Number, Number, Number, Number),
+}
+
 // https://developer.mozilla.org/en-US/docs/Web/CSS/filter-function
 #[derive(Clone, Debug, CSSValue, VariantConstructors)]
 pub enum FilterFunction {
@@ -208,13 +266,19 @@ pub enum FilterFunction {
     Sepia(NumberPercentage),
 }
 
-// TODO shape-box
+// https://drafts.csswg.org/css-shapes-1/#typedef-shape-box
+#[derive(Clone, Debug, CSSValue, FromVariants)]
+pub enum ShapeBox {
+    Box(CSSBox),
 
-// TODO timing-function
+    #[keyword]
+    MarginBox,
+}
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function
 // #[derive(Clone, Debug, CSSValue)]
 pub enum TransformFunction {
+    // TODO
     Matrix(),
     Matrix3d(),
 
