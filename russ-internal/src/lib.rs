@@ -86,7 +86,9 @@ where
     }
 }
 
-// TODO doc
+/// Macro for creating a [`Multiple`].
+///
+/// [`Multiple`]: ./struct.Multiple.html
 #[macro_export]
 macro_rules! multiple {
     ($v:expr, $($others:expr),+ $(,)?) => (

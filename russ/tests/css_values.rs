@@ -1,4 +1,4 @@
-use russ::css::{values::*, CSSWriter, WriteValue, multiple};
+use russ::css::{multiple, values::*, CSSWriter, WriteValue};
 
 fn render(value: impl WriteValue) -> String {
     let mut v = Vec::new();

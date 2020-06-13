@@ -8,7 +8,11 @@ use std::{iter, ops::Deref};
 /// Collection of at least one item.
 /// Internally this is a vector but with some additional guards.
 ///
-/// Implements `From<T>` for a single value `T`.
+/// See the [`multiple!`] macro.
+///
+/// Implements [`From<T>`](From) for a single value `T`.
+///
+/// [`multiple!`]: ./macro.multiple.html
 #[derive(Clone, Debug, Eq, PartialEq, CSSValue)]
 pub struct Multiple<T>(Vec<T>);
 impl<T> Multiple<T> {
@@ -16,6 +20,7 @@ impl<T> Multiple<T> {
         Self(v)
     }
 
+    /// This should only be used by the macro.
     #[doc(hidden)]
     pub fn __unchecked_new(v: Vec<T>) -> Self {
         Self::unchecked_new(v)
