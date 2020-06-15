@@ -37,29 +37,6 @@ pub trait WriteDeclaration: WriteValue {
     fn write_property(&self, f: &mut CSSWriter) -> WriteResult;
 }
 
-pub struct Declaration {
-    inner: Box<dyn WriteDeclaration>,
-}
-impl Declaration {
-    pub fn write_declaration(&self, f: &mut CSSWriter) -> WriteResult {
-        self.inner.write_property(f)?;
-        f.write_char(':')?;
-        self.inner.write_value(f)
-    }
-}
-
-pub struct DeclarationBlock(Vec<Declaration>);
-impl DeclarationBlock {
-    pub fn write_block(&self, f: &mut CSSWriter) -> WriteResult {
-        f.write_char('{')?;
-        for decl in &self.0 {
-            decl.write_declaration(f)?;
-            f.write_char(';')?;
-        }
-        f.write_char('}')
-    }
-}
-
 impl<T> WriteValue for Box<T>
 where
     T: WriteValue,
@@ -68,7 +45,7 @@ where
         self.as_ref().write_value(f)
     }
 }
-// TODO this implementation should only exist on Multiple<>?
+// TODO this implementation should only exist on Multiple<>
 impl<T> WriteValue for Vec<T>
 where
     T: WriteValue,

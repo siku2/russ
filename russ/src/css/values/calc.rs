@@ -7,7 +7,7 @@ use russ_internal::{CSSValue, CSSWriter, FromVariants, WriteResult, WriteValue};
 //      Need to verify if this is actually valid though.
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/calc
-#[derive(Clone, Debug, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
 #[function]
 pub struct Calc(CalcSum);
 impl Calc {
@@ -40,7 +40,7 @@ impl Calc {
     }
 }
 
-#[derive(Clone, Debug, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
 pub enum CalcSumPart {
     #[value(prefix = " + ")]
     Add(CalcProduct),
@@ -48,7 +48,7 @@ pub enum CalcSumPart {
     Sub(CalcProduct),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct CalcSum(pub CalcProduct, pub Vec<CalcSumPart>);
 impl CalcSum {
     pub fn unary(value: impl Into<CalcProduct>) -> Self {
@@ -77,7 +77,7 @@ where
     }
 }
 
-#[derive(Clone, Debug, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
 pub enum CalcProductPart {
     #[value(prefix = " * ")]
     Mul(CalcValue),
@@ -85,7 +85,7 @@ pub enum CalcProductPart {
     Div(Number),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct CalcProduct(pub CalcValue, pub Vec<CalcProductPart>);
 impl CalcProduct {
     pub fn unary(value: impl Into<CalcValue>) -> Self {
@@ -114,7 +114,7 @@ where
     }
 }
 
-#[derive(Clone, Debug, CSSValue, FromVariants)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, FromVariants)]
 pub enum CalcValue {
     Number(Number),
     #[value(prefix = "(", suffix = ")")]

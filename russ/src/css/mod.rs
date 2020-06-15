@@ -13,7 +13,7 @@ use std::{iter, ops::Deref};
 /// Implements [`From<T>`](From) for a single value `T`.
 ///
 /// [`multiple!`]: ./macro.multiple.html
-#[derive(Clone, Debug, Eq, PartialEq, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, CSSValue)]
 pub struct Multiple<T>(Vec<T>);
 impl<T> Multiple<T> {
     fn unchecked_new(v: Vec<T>) -> Self {
@@ -89,7 +89,7 @@ impl<T> Into<Vec<T>> for Multiple<T> {
 /// Implements `From` for tuples with length 1 to 4 where each item implements `Into<T>`.
 /// To use a 1-tuple use the following syntax: `(T,)`.
 #[allow(clippy::type_complexity)]
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct OneToFour<T>(T, Option<(T, Option<(T, Option<T>)>)>);
 impl<T> OneToFour<T> {
     fn unchecked_from_linear(v0: T, v1: Option<T>, v2: Option<T>, v3: Option<T>) -> Self {
