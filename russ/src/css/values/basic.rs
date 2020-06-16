@@ -1,7 +1,7 @@
 use super::Calc;
 use russ_internal::{CSSValue, CSSWriter, FromVariants, WriteResult, WriteValue};
 use std::{
-    cmp::{Ordering, PartialOrd},
+    cmp::{Ordering, PartialEq, PartialOrd},
     hash::{Hash, Hasher},
     io::Write,
 };
@@ -68,11 +68,10 @@ impl From<Calc> for Integer {
     }
 }
 
-// TODO perhaps represent differently to make eq, hash easier?
 pub type NumberValueType = f64;
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/number
-#[derive(Clone, Debug, PartialEq, FromVariants)]
+#[derive(Clone, Debug, FromVariants)]
 pub enum Number {
     #[from_variant(into)]
     Value(NumberValueType),
@@ -97,6 +96,16 @@ impl Hash for Number {
         match self {
             Self::Value(v) => v.to_bits().hash(state),
             Self::Calc(v) => v.hash(state),
+        }
+    }
+}
+impl PartialEq for Number {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            // TODO find a method that guarantees that s == o => render(s) == render(o)
+            (Self::Value(s), Self::Value(o)) => s.eq(o),
+            (Self::Calc(s), Self::Calc(o)) => s.eq(o),
+            _ => false,
         }
     }
 }

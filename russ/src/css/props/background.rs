@@ -5,7 +5,7 @@ use crate::css::{
 };
 use russ_internal::{CSSDeclaration, CSSValue, CSSWriter, FromVariants, WriteResult, WriteValue};
 
-#[derive(Clone, Debug, CSSValue)]
+#[derive(Clone, Debug, Default, Eq, Hash, PartialEq, CSSValue)]
 #[value]
 pub struct BackgroundLayer {
     image: Option<BackgroundImage>,
@@ -19,7 +19,7 @@ pub struct BackgroundLayer {
     clip: Option<BackgroundClip>,
 }
 
-#[derive(Clone, Debug, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
 #[value]
 pub struct BackgroundLayerFinal {
     pub layer: BackgroundLayer,
@@ -27,11 +27,11 @@ pub struct BackgroundLayerFinal {
 }
 
 /// https://developer.mozilla.org/en-US/docs/Web/CSS/background
-#[derive(Clone, Debug, CSSDeclaration, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSDeclaration, CSSValue)]
 #[value]
 pub struct Background(pub Vec<BackgroundLayer>, pub BackgroundLayerFinal);
 
-#[derive(Clone, Debug, CSSValue)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, CSSValue)]
 pub enum Attachment {
     #[keyword]
     Fixed,
@@ -42,15 +42,15 @@ pub enum Attachment {
 }
 
 /// https://developer.mozilla.org/en-US/docs/Web/CSS/background-color
-#[derive(Clone, Debug, CSSDeclaration, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSDeclaration, CSSValue)]
 pub struct BackgroundColor(pub Color);
 
 /// https://developer.mozilla.org/en-US/docs/Web/CSS/background-attachment
-#[derive(Clone, Debug, CSSDeclaration, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSDeclaration, CSSValue)]
 pub struct BackgroundAttachment(pub Multiple<Attachment>);
 
 /// https://drafts.csswg.org/css-backgrounds-4/#typedef-box
-#[derive(Clone, Debug, CSSValue, FromVariants)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, FromVariants)]
 pub enum BackgroundClipItem {
     Box(CSSBox),
     // still experimental
@@ -61,11 +61,11 @@ pub enum BackgroundClipItem {
 }
 
 /// https://developer.mozilla.org/en-US/docs/Web/CSS/background-clip
-#[derive(Clone, Debug, CSSDeclaration, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSDeclaration, CSSValue)]
 pub struct BackgroundClip(pub Multiple<BackgroundClipItem>);
 
 /// https://developer.mozilla.org/en-US/docs/Web/CSS/background-image
-#[derive(Clone, Debug, CSSDeclaration, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSDeclaration, CSSValue)]
 pub struct BackgroundImage(#[field(write_fn = "Self::write_images")] pub Multiple<Option<Image>>);
 impl BackgroundImage {
     fn write_image(f: &mut CSSWriter, img: &Option<Image>) -> WriteResult {
@@ -89,14 +89,14 @@ impl BackgroundImage {
 }
 
 /// https://developer.mozilla.org/en-US/docs/Web/CSS/background-origin
-#[derive(Clone, Debug, CSSDeclaration, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSDeclaration, CSSValue)]
 pub struct BackgroundOrigin(pub Multiple<CSSBox>);
 
 /// https://developer.mozilla.org/en-US/docs/Web/CSS/background-position
-#[derive(Clone, Debug, CSSDeclaration, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSDeclaration, CSSValue)]
 pub struct BackgroundPosition(pub Multiple<Position>);
 
-#[derive(Clone, Debug, CSSValue)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, CSSValue)]
 pub enum BackgroundRepeatStyle {
     #[keyword]
     Repeat,
@@ -108,7 +108,7 @@ pub enum BackgroundRepeatStyle {
     NoRepeat,
 }
 
-#[derive(Clone, Debug, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
 pub enum BackgroundRepeatItem {
     #[value]
     XY(BackgroundRepeatStyle, Option<BackgroundRepeatStyle>),
@@ -119,17 +119,17 @@ pub enum BackgroundRepeatItem {
 }
 
 /// https://developer.mozilla.org/en-US/docs/Web/CSS/background-repeat
-#[derive(Clone, Debug, CSSDeclaration, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSDeclaration, CSSValue)]
 pub struct BackgroundRepeat(pub Multiple<BackgroundRepeatItem>);
 
-#[derive(Clone, Debug, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
 pub enum BackgroundSizeItemValue {
     LengthPercentage(LengthPercentage),
     #[keyword]
     Auto,
 }
 
-#[derive(Clone, Debug, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
 pub enum BackgroundSizeItem {
     #[value]
     XY(BackgroundSizeItemValue, Option<BackgroundSizeItemValue>),
@@ -140,27 +140,27 @@ pub enum BackgroundSizeItem {
 }
 
 /// https://developer.mozilla.org/en-US/docs/Web/CSS/background-size
-#[derive(Clone, Debug, CSSDeclaration, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSDeclaration, CSSValue)]
 pub struct BackgroundSize(pub Multiple<BackgroundSizeItem>);
 
 /// https://drafts.csswg.org/css-backgrounds-3/#propdef-border-color
-#[derive(Clone, Debug, CSSDeclaration, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSDeclaration, CSSValue)]
 pub struct BorderTopColor(pub Color);
 /// https://drafts.csswg.org/css-backgrounds-3/#propdef-border-color
-#[derive(Clone, Debug, CSSDeclaration, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSDeclaration, CSSValue)]
 pub struct BorderRightColor(pub Color);
 /// https://drafts.csswg.org/css-backgrounds-3/#propdef-border-color
-#[derive(Clone, Debug, CSSDeclaration, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSDeclaration, CSSValue)]
 pub struct BorderBottomColor(pub Color);
 /// https://drafts.csswg.org/css-backgrounds-3/#propdef-border-color
-#[derive(Clone, Debug, CSSDeclaration, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSDeclaration, CSSValue)]
 pub struct BorderLeftColor(pub Color);
 /// https://drafts.csswg.org/css-backgrounds-3/#propdef-border-color
-#[derive(Clone, Debug, CSSDeclaration, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSDeclaration, CSSValue)]
 pub struct BorderColor(pub OneToFour<Color>);
 
 /// https://drafts.csswg.org/css-backgrounds-3/#typedef-line-style
-#[derive(Clone, Debug, CSSValue)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, CSSValue)]
 pub enum LineStyle {
     #[keyword]
     None,
@@ -185,17 +185,17 @@ pub enum LineStyle {
 }
 
 /// https://drafts.csswg.org/css-backgrounds-3/#propdef-border-style
-#[derive(Clone, Debug, CSSDeclaration, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSDeclaration, CSSValue)]
 pub struct BorderTopStyle(pub Color);
 /// https://drafts.csswg.org/css-backgrounds-3/#propdef-border-style
-#[derive(Clone, Debug, CSSDeclaration, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSDeclaration, CSSValue)]
 pub struct BorderRightStyle(pub Color);
 /// https://drafts.csswg.org/css-backgrounds-3/#propdef-border-style
-#[derive(Clone, Debug, CSSDeclaration, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSDeclaration, CSSValue)]
 pub struct BorderBottomStyle(pub Color);
 /// https://drafts.csswg.org/css-backgrounds-3/#propdef-border-style
-#[derive(Clone, Debug, CSSDeclaration, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSDeclaration, CSSValue)]
 pub struct BorderLeftStyle(pub Color);
 /// https://drafts.csswg.org/css-backgrounds-3/#propdef-border-style
-#[derive(Clone, Debug, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
 pub struct BorderStyle(pub OneToFour<LineStyle>);

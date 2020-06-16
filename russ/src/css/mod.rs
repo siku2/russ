@@ -1,7 +1,8 @@
 pub mod props;
 pub mod values;
 pub use russ_internal::{
-    multiple, CSSDeclaration, CSSValue, CSSWriter, WriteDeclaration, WriteResult, WriteValue,
+    multiple, vec_into, CSSDeclaration, CSSValue, CSSWriter, WriteDeclaration, WriteResult,
+    WriteValue,
 };
 use std::{iter, ops::Deref};
 

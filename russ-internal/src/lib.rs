@@ -1,3 +1,5 @@
+mod macros;
+
 pub use russ_internal_macro::{CSSDeclaration, CSSValue, FromVariants, VariantConstructors};
 use std::io::{self, Write};
 
@@ -35,6 +37,12 @@ pub trait WriteValue {
 
 pub trait WriteDeclaration: WriteValue {
     fn write_property(&self, f: &mut CSSWriter) -> WriteResult;
+
+    fn write_declaration(&self, f: &mut CSSWriter) -> WriteResult {
+        self.write_property(f)?;
+        f.write_char(':')?;
+        self.write_value(f)
+    }
 }
 
 impl<T> WriteValue for Box<T>
@@ -61,14 +69,4 @@ where
 
         Ok(())
     }
-}
-
-/// Macro for creating a [`Multiple`].
-///
-/// [`Multiple`]: ./struct.Multiple.html
-#[macro_export]
-macro_rules! multiple {
-    ($v:expr, $($others:expr),+ $(,)?) => (
-        ::russ::css::Multiple::__unchecked_new(::std::vec![$v, $($others),*])
-    );
 }
