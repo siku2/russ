@@ -1,7 +1,7 @@
 mod attributes;
 mod css_field;
 
-use crate::args;
+use super::args;
 use attributes::CSSValueAttr;
 use css_field::CSSField;
 use heck::KebabCase;

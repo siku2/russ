@@ -1,4 +1,4 @@
-use crate::args::{self, Args, FromArgs};
+use super::args::{self, Args, FromArgs};
 use heck::SnakeCase;
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};

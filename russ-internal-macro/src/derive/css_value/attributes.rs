@@ -1,4 +1,4 @@
-use crate::args::{Args, FromArgs, ParseAttr};
+use super::args::{Args, FromArgs, ParseAttr};
 use quote::ToTokens;
 use syn::{Attribute, LitStr};
 

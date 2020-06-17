@@ -1,4 +1,4 @@
-use crate::args::{self, Args, FromArgs};
+use super::args::{self, Args, FromArgs};
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{spanned::Spanned, Attribute, Data, DeriveInput, Fields, Ident, Variant};
