@@ -33,3 +33,9 @@ pub fn derive_variant_constructors(input: proc_macro::TokenStream) -> proc_macro
     let input = parse_macro_input!(input as DeriveInput);
     to_token_stream(derive::generate_variant_constructors(input))
 }
+
+#[proc_macro]
+pub fn vds(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let _input = parse_macro_input!(input as vds::VDS);
+    proc_macro::TokenStream::new()
+}
