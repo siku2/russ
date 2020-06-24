@@ -14,7 +14,7 @@ use std::{iter, ops::Deref};
 /// Implements [`From<T>`](From) for a single value `T`.
 ///
 /// [`multiple!`]: ./macro.multiple.html
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Multiple<T>(Vec<T>);
 impl<T> Multiple<T> {
     fn unchecked_new(v: Vec<T>) -> Self {
@@ -65,6 +65,35 @@ impl<T> Multiple<T> {
                 .chain(others.into_iter().map(Into::into))
                 .collect(),
         )
+    }
+
+    fn first(&self) -> &T {
+        // SAFETY: type is guaranteed to have at least one item
+        unsafe { self.0.get_unchecked(0) }
+    }
+
+    fn rest(&self) -> &[T] {
+        // SAFETY: type is guaranteed to have at least one item
+        unsafe { self.0.get_unchecked(1..) }
+    }
+
+    fn split_first(&self) -> (&T, &[T]) {
+        (self.first(), self.rest())
+    }
+}
+impl<T> WriteValue for Multiple<T>
+where
+    T: WriteValue,
+{
+    fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
+        let (first, rest) = self.split_first();
+        first.write_value(f)?;
+        for v in rest {
+            f.write_char(',')?;
+            v.write_value(f)?;
+        }
+
+        Ok(())
     }
 }
 impl<T> Deref for Multiple<T> {

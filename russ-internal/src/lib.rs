@@ -53,20 +53,3 @@ where
         self.as_ref().write_value(f)
     }
 }
-// TODO this implementation should only exist on Multiple<>
-impl<T> WriteValue for Vec<T>
-where
-    T: WriteValue,
-{
-    fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
-        if let Some((last, rest)) = self.split_last() {
-            for v in rest {
-                v.write_value(f)?;
-                f.write_char(',')?;
-            }
-            last.write_value(f)?;
-        }
-
-        Ok(())
-    }
-}

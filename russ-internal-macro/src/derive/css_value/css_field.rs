@@ -9,6 +9,7 @@ pub struct FieldAttr {
     pub suffix: Option<LitStr>,
     pub write_fn: Option<LitStr>,
     pub option: bool,
+    pub iter: bool,
     pub iter_option: bool,
     pub iter_separator: Option<LitStr>,
 }
@@ -53,6 +54,7 @@ impl FromArgs for FieldAttr {
             suffix: args.get_kwarg_str("suffix")?,
             write_fn: args.get_kwarg_str("write_fn")?,
             option: args.has_flag("option"),
+            iter: args.has_flag("iter"),
             iter_option: args.has_flag("iter_option"),
             iter_separator: args.get_kwarg_str("iter_separator")?,
         })
@@ -64,17 +66,17 @@ impl ToTokens for FieldAttr {
     }
 }
 
-fn path_is_option(path: &Path) -> bool {
+fn path_is_eq_to(path: &Path, name: &str) -> bool {
     if let Some(last) = path.segments.last() {
-        last.ident == "Option"
+        last.ident == name
     } else {
         false
     }
 }
 
-fn type_is_option(ty: &Type) -> bool {
+fn type_is_eq_to(ty: &Type, name: &str) -> bool {
     match ty {
-        Type::Path(ty) => path_is_option(&ty.path),
+        Type::Path(ty) => path_is_eq_to(&ty.path, name),
         _ => false,
     }
 }
@@ -84,23 +86,28 @@ fn type_is_option(ty: &Type) -> bool {
 pub struct CSSField {
     pub bind_ident: Ident,
     pub attr: Option<FieldAttr>,
-    assume_option: bool,
+    is_option: bool,
+    is_iter: bool,
 }
 impl CSSField {
     pub fn from_field(bind_ident: Ident, field: &Field) -> syn::Result<Self> {
-        let assume_option;
+        let is_option;
+        let is_iter;
 
         let attr: Option<FieldAttr> = args::parse_single_from_attrs(&field.attrs).transpose()?;
         if let Some(attr) = &attr {
-            assume_option = attr.option;
+            is_option = attr.option;
+            is_iter = attr.iter;
         } else {
-            assume_option = type_is_option(&field.ty);
+            is_option = type_is_eq_to(&field.ty, "Option");
+            is_iter = type_is_eq_to(&field.ty, "Vec");
         }
 
         Ok(Self {
             bind_ident,
             attr,
-            assume_option,
+            is_option,
+            is_iter,
         })
     }
 
@@ -120,7 +127,20 @@ impl CSSField {
                 #fn_path(f, #value_ident)?;
             });
         }
-        if matches!(
+        if self.is_iter {
+            let write_separator = FieldAttr::gen_write_separator(&attr);
+
+            Ok(quote_spanned! {bind_ident.span()=>
+                let mut __v_iter = ::std::iter::IntoIterator::into_iter(#value_ident);
+                if let ::std::option::Option::Some(__v) = __v_iter.next() {
+                    ::russ_internal::WriteValue::write_value(__v, f)?;
+                }
+                for __v in __v_iter {
+                    #write_separator
+                    ::russ_internal::WriteValue::write_value(__v, f)?;
+                }
+            })
+        } else if matches!(
             attr,
             Some(FieldAttr {
                 iter_option: true, ..
@@ -168,16 +188,30 @@ impl CSSField {
     fn gen_write_with_before_write(&self, tokens: TokenStream) -> syn::Result<TokenStream> {
         let Self {
             bind_ident,
-            assume_option,
+            is_option,
+            is_iter,
             ..
         } = self;
 
-        if *assume_option {
+        assert!(
+            !(*is_option && *is_iter),
+            "can't be `is_iter` and `option` at the same time"
+        );
+
+        if *is_option {
             let ident = Ident::new("__v", bind_ident.span());
             let write_value = self.gen_write_value(&ident)?;
             // using a semicolon at the end of the if statement to suppress `clippy::suspicious_else_formatting`
             Ok(quote_spanned! {bind_ident.span()=>
                 if let ::std::option::Option::Some(#ident) = #bind_ident {
+                    #tokens
+                    #write_value
+                };
+            })
+        } else if *is_iter {
+            let write_value = self.gen_write_value(bind_ident)?;
+            Ok(quote_spanned! {bind_ident.span()=>
+                if !(#bind_ident).is_empty() {
                     #tokens
                     #write_value
                 };
@@ -212,7 +246,7 @@ pub fn gen_join_fields_with_write_separator(
     fields: &[CSSField],
     write_separator: impl ToTokens,
 ) -> syn::Result<TokenStream> {
-    if fields.iter().all(|field| !field.assume_option) {
+    if fields.iter().all(|field| !field.is_option) {
         let write_value_vec = fields
             .iter()
             .map(|field| field.gen_write_value(&field.bind_ident))
