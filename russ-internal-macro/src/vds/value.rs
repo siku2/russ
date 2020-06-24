@@ -2,6 +2,7 @@ use super::{
     combined::CombinedValue,
     multiplier::{Multiplier, MultiplierType},
 };
+use std::fmt::{self, Debug, Formatter};
 use syn::{
     bracketed,
     ext::IdentExt,
@@ -21,6 +22,13 @@ impl CSSIdent {
             }
             s
         })
+    }
+}
+impl Debug for CSSIdent {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        f.debug_struct("CSSIdent")
+            .field("value", &self.value())
+            .finish()
     }
 }
 impl Parse for CSSIdent {
