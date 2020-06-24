@@ -15,10 +15,6 @@ impl AllOrdered {
             _ => None,
         }
     }
-
-    pub fn unpack_single_values(&self) -> Option<&Vec<SingleValue>> {
-        Some(&self.components)
-    }
 }
 impl Parse for AllOrdered {
     fn parse(input: ParseStream) -> syn::Result<Self> {
@@ -45,10 +41,6 @@ impl AllUnordered {
         }
         None
     }
-
-    pub fn unpack_single_values(&self) -> Option<&Vec<SingleValue>> {
-        self.unpack_one().and_then(|v| v.unpack_single_values())
-    }
 }
 impl Parse for AllUnordered {
     fn parse(input: ParseStream) -> syn::Result<Self> {
@@ -69,10 +61,6 @@ impl OneOrMoreUnordered {
             }
         }
         None
-    }
-
-    pub fn unpack_single_values(&self) -> Option<&Vec<SingleValue>> {
-        self.unpack_one().and_then(|v| v.unpack_single_values())
     }
 }
 impl Parse for OneOrMoreUnordered {
@@ -95,10 +83,6 @@ impl Enumeration {
         }
         None
     }
-
-    pub fn unpack_single_values(&self) -> Option<&Vec<SingleValue>> {
-        self.unpack_one().and_then(|v| v.unpack_single_values())
-    }
 }
 impl Parse for Enumeration {
     fn parse(input: ParseStream) -> syn::Result<Self> {
@@ -115,10 +99,7 @@ pub enum CombinedValueType {
     Enumeration,
 }
 impl CombinedValueType {
-    pub fn peek_variant(input: ParseStream) -> syn::Result<Self> {
-        let input = input.fork();
-        input.parse::<SingleValue>()?;
-
+    pub fn peek_variant_separator(input: ParseStream) -> syn::Result<Self> {
         let lookahead = input.lookahead1();
         if lookahead.peek(Token![&&]) {
             Ok(Self::AllUnordered)
@@ -131,6 +112,12 @@ impl CombinedValueType {
         } else {
             Err(lookahead.error())
         }
+    }
+
+    pub fn peek_variant(input: ParseStream) -> syn::Result<Self> {
+        let input = input.fork();
+        input.parse::<SingleValue>()?;
+        Self::peek_variant_separator(&input)
     }
 }
 

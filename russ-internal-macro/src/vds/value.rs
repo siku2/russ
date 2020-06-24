@@ -1,5 +1,5 @@
 use super::{
-    combined::{CombinedValue, CombinedValueType},
+    combined::CombinedValue,
     multiplier::{Multiplier, MultiplierType},
 };
 use syn::{
@@ -111,7 +111,7 @@ pub type PropertyReference = AngleBracketed<LitStr>;
 
 pub struct Group {
     pub bracket: token::Bracket,
-    pub value: Box<Value>,
+    pub value: Box<CombinedValue>,
 }
 impl Parse for Group {
     fn parse(input: ParseStream) -> syn::Result<Self> {
@@ -192,19 +192,5 @@ impl Parse for SingleValue {
             multiplier,
             comma,
         })
-    }
-}
-
-pub enum Value {
-    Single(SingleValue),
-    Combined(CombinedValue),
-}
-impl Parse for Value {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        if CombinedValueType::peek_variant(input).is_ok() {
-            input.parse().map(Self::Combined)
-        } else {
-            input.parse().map(Self::Single)
-        }
     }
 }

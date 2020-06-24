@@ -1,8 +1,9 @@
+use combined::CombinedValue;
 use syn::{
     parse::{Parse, ParseStream},
     Token,
 };
-use value::{PropertyReference, Reference, Value};
+use value::{PropertyReference, Reference};
 
 mod combined;
 mod multiplier;
@@ -11,7 +12,7 @@ mod value;
 pub struct DefinitionLine<T> {
     pub name: T,
     pub equals_sign: Token![=],
-    pub value: Value,
+    pub value: CombinedValue,
     pub semicolon: Token![;],
 }
 impl<T: Parse> Parse for DefinitionLine<T> {
