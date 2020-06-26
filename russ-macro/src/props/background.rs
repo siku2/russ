@@ -13,7 +13,7 @@ vds! {
 }
 
 vds! {
-    <"background-repeat"> = <attachment>#;
+    <"background-attachment"> = <attachment>#;
     <attachment> = scroll | fixed | local;
 }
 
@@ -25,11 +25,11 @@ vds! {
 }
 
 vds! {
-    <"background-clip"> = <box>#;
+    <"background-clip"> = <css-box>#;
 }
 
 vds! {
-    <"background-origin"> = <box>#;
+    <"background-origin"> = <css-box>#;
 }
 
 vds! {
@@ -39,6 +39,6 @@ vds! {
 
 vds! {
     <"background"> = <bg-layer>#, <final-bg-layer>;
-    <bg-layer> = <bg-image> || <bg-position> [ "/" <bg-size> ]? || <repeat-style> || <attachment> || <box> || <box>;
-    <final-bg-layer> =  <"background-color"> || <bg-image> || <bg-position> [ "/" <bg-size> ]? || <repeat-style> || <attachment> || <box> || <box>;
+    <bg-layer> = <bg-image> || <bg-position> [ "/" <bg-size> ]? || <repeat-style> || <attachment> || <css-box> || <css-box>;
+    <final-bg-layer> =  <"background-color"> || <bg-image> || <bg-position> [ "/" <bg-size> ]? || <repeat-style> || <attachment> || <css-box> || <css-box>;
 }
