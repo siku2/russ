@@ -21,8 +21,8 @@ pub struct DefinitionLine<T> {
 }
 impl<T> DefinitionLine<T> {
     pub fn gen_type_info(&self, ctx: &GenerateTypeContext, ident: Ident) -> syn::Result<TypeInfo> {
-        let ident = ctx.propose_ident(&ident.to_string())?;
-        let value_ty = self.value.gen_type_info(ctx)?;
+        let (ident, new_ctx) = ctx.namespace_ident(&ident)?;
+        let value_ty = self.value.gen_type_info(&new_ctx)?;
         let inner_value_ty = &value_ty.value_type;
         let ty = parse_quote! { #ident };
         let def = parse_quote! {

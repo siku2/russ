@@ -1,9 +1,8 @@
 use super::{
-    generate::{self, GenerateTypeContext, GenerateTypeInfo, TypeDefinition, TypeInfo},
+    generate::{GenerateTypeContext, GenerateTypeInfo, TypeDefinition, TypeInfo},
     value::{PrimitiveValueType, SingleValue},
 };
-use quote::quote;
-use std::collections::HashSet;
+use quote::{format_ident, quote};
 use syn::{
     parse::{Parse, ParseStream},
     parse_quote,
@@ -25,6 +24,10 @@ impl AllOrdered {
 }
 impl GenerateTypeInfo for AllOrdered {
     fn gen_type_info(&self, ctx: &GenerateTypeContext) -> syn::Result<TypeInfo> {
+        if self.components.len() == 1 {
+            return self.components.first().unwrap().gen_type_info(ctx);
+        }
+
         let deps = self.gen_component_types(ctx)?;
         let types_it = deps.iter().map(|d| &d.value_type);
         let ty = parse_quote! {
@@ -58,6 +61,10 @@ impl AllUnordered {
 }
 impl GenerateTypeInfo for AllUnordered {
     fn gen_type_info(&self, ctx: &GenerateTypeContext) -> syn::Result<TypeInfo> {
+        if self.components.len() == 1 {
+            return self.components.first().unwrap().gen_type_info(ctx);
+        }
+
         let deps = self.gen_component_types(ctx)?;
         let types_it = deps.iter().map(|d| &d.value_type);
         let ty = parse_quote! {
@@ -86,6 +93,10 @@ impl OneOrMoreUnordered {
 }
 impl GenerateTypeInfo for OneOrMoreUnordered {
     fn gen_type_info(&self, ctx: &GenerateTypeContext) -> syn::Result<TypeInfo> {
+        if self.components.len() == 1 {
+            return self.components.first().unwrap().gen_type_info(ctx);
+        }
+
         let deps = self.gen_component_types(ctx)?;
         let opt_types_it = deps.iter().map(|d| -> Type {
             let ty = &d.value_type;
@@ -115,15 +126,10 @@ impl Enumeration {
             .collect()
     }
 
-    fn gen_variant_ident(i: u16, info: &TypeInfo, used_names: &mut HashSet<String>) -> Ident {
-        if let Some(ref def) = info.definition {
-            let ident = &def.ident;
-            if used_names.insert(ident.to_string()) {
-                return ident.clone();
-            }
-        }
-
-        Ident::new(&generate::get_letter_code(i), info.value_type.span())
+    fn gen_variant_ident(i: u16, info: &TypeInfo) -> Ident {
+        //! FIXME this can generate duplicate idents
+        info.get_type_ident()
+            .unwrap_or_else(|| format_ident!("V{:X}", i, span = info.value_type.span()))
     }
 
     pub fn gen_variants(
@@ -131,11 +137,9 @@ impl Enumeration {
         _ctx: &GenerateTypeContext,
         deps: &[TypeInfo],
     ) -> syn::Result<Vec<Variant>> {
-        let mut used_names = HashSet::new();
-
         let mut variants = Vec::with_capacity(deps.len());
         for (i, ty) in deps.iter().enumerate() {
-            let variant_ident = Self::gen_variant_ident(i as u16, ty, &mut used_names);
+            let variant_ident = Self::gen_variant_ident(i as u16, ty);
             let variant_body = match &ty.value_type {
                 Type::Tuple(v) => quote! { #v },
                 v => quote! { (#v) },
@@ -151,10 +155,14 @@ impl Enumeration {
 }
 impl GenerateTypeInfo for Enumeration {
     fn gen_type_info(&self, ctx: &GenerateTypeContext) -> syn::Result<TypeInfo> {
-        let deps = self.gen_component_types(ctx)?;
+        if self.components.len() == 1 {
+            return self.components.first().unwrap().gen_type_info(ctx);
+        }
 
-        let ident = ctx.propose_ident("Value")?;
-        let variants = self.gen_variants(&ctx, &deps)?;
+        let (ident, new_ctx) = ctx.namespace("value")?;
+
+        let deps = self.gen_component_types(&new_ctx)?;
+        let variants = self.gen_variants(&new_ctx, &deps)?;
         let definition = parse_quote! {
             pub enum #ident {
                 #(#variants),*

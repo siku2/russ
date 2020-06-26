@@ -6,6 +6,7 @@ use super::{
 };
 use heck::CamelCase;
 use proc_macro2::{Span, TokenStream};
+use quote::format_ident;
 use std::{
     fmt::{self, Debug, Formatter},
     str::FromStr,
@@ -83,9 +84,12 @@ impl Spanned for CSSIdent {
 
 pub struct Keyword(pub CSSIdent);
 impl GenerateTypeInfo for Keyword {
-    fn gen_type_info(&self, ctx: &GenerateTypeContext) -> syn::Result<TypeInfo> {
-        let name = self.0.value().to_camel_case();
-        let ident = ctx.propose_ident(&name)?;
+    fn gen_type_info(&self, _ctx: &GenerateTypeContext) -> syn::Result<TypeInfo> {
+        let css_ident = &self.0;
+        let ident = helpers::parse_ident_with_span(
+            &format!("Kw{}", css_ident.value().to_camel_case()),
+            css_ident.span(),
+        )?;
         let definition = parse_quote! { pub struct #ident; };
         let ty = parse_quote! { #ident };
         Ok(TypeInfo::new(ty).with_definition(TypeDefinition::new(ident, definition)))
@@ -240,8 +244,10 @@ impl Reference {
     pub fn ref_ident_raw(&self) -> &CSSIdent {
         &self.0.content.ident
     }
+
     pub fn ref_ident(&self) -> syn::Result<Ident> {
-        self.ref_ident_raw().ident_camel_case()
+        let ident = self.ref_ident_raw().ident_camel_case()?;
+        Ok(format_ident!("V{}", ident))
     }
 }
 impl GenerateTypeInfo for Reference {
