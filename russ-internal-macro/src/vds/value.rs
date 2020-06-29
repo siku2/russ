@@ -172,7 +172,7 @@ impl ClosedRange {
                     #result_ok
                 }
             }
-        }).unwrap_or(result_ok.clone());
+        }).unwrap_or_else(|| result_ok.clone());
         let high_check = max.as_ref().map(|max| {
             parse_quote! {
                 if #value_ident > #max {

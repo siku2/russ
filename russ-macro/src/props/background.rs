@@ -1,4 +1,4 @@
-use crate::values::{Color, LengthPercentage, Image, CssBox};
+use crate::values::{Color, CssBox, Image, LengthPercentage};
 use russ_internal_macro::vds;
 
 vds! { <"background-color"> = <color>; }

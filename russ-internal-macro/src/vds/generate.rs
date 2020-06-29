@@ -109,13 +109,10 @@ impl TypeInfo {
             return Some(name.clone());
         }
 
-        match self.dependencies.as_slice() {
-            [first] => {
-                if let Some(ident) = first.get_name() {
-                    return Some(ident);
-                }
+        if let [first] = self.dependencies.as_slice() {
+            if let Some(ident) = first.get_name() {
+                return Some(ident);
             }
-            _ => {}
         }
 
         None
