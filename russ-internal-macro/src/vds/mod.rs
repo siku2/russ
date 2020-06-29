@@ -20,10 +20,10 @@ pub struct DefinitionLine<T> {
     pub semicolon: Token![;],
 }
 impl<T> DefinitionLine<T> {
-    pub fn gen_type_info(&self, ctx: &GenerateTypeContext, ident: Ident) -> syn::Result<TypeInfo> {
-        let (ident, new_ctx) = ctx.namespace_ident(&ident)?;
-        let value_ty = self.value.gen_type_info(&new_ctx)?;
-        let inner_value_ty = &value_ty.value_type;
+    pub fn gen_type_info(&self, ctx: GenerateTypeContext, ident: Ident) -> syn::Result<TypeInfo> {
+        let (ident, ctx) = ctx.fork_namespace(&ident)?;
+        let value_ty = self.value.gen_type_info(ctx)?;
+        let inner_value_ty = value_ty.value_type_unwrap_tuple();
         let ty = parse_quote! { #ident };
         let def = parse_quote! {
             pub struct #ident(#inner_value_ty);
@@ -50,7 +50,7 @@ impl<T: Parse> Parse for DefinitionLine<T> {
 
 pub struct PropertyDefinition(pub DefinitionLine<PropertyReference>);
 impl GenerateTypeInfo for PropertyDefinition {
-    fn gen_type_info(&self, ctx: &GenerateTypeContext) -> syn::Result<TypeInfo> {
+    fn gen_type_info(&self, ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         let ident = self.0.name.prop_ident()?;
         self.0.gen_type_info(ctx, ident)
     }
@@ -62,7 +62,7 @@ impl Parse for PropertyDefinition {
 }
 pub struct ValueDefinition(pub DefinitionLine<Reference>);
 impl GenerateTypeInfo for ValueDefinition {
-    fn gen_type_info(&self, ctx: &GenerateTypeContext) -> syn::Result<TypeInfo> {
+    fn gen_type_info(&self, ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         let ident = self.0.name.ref_ident()?;
         self.0.gen_type_info(ctx, ident)
     }
@@ -78,19 +78,22 @@ pub struct VDS {
     pub values: Vec<ValueDefinition>,
 }
 impl VDS {
-    pub fn gen_dependencies(&self, ctx: &GenerateTypeContext) -> syn::Result<Vec<TypeInfo>> {
-        self.values.iter().map(|v| v.gen_type_info(ctx)).collect()
+    pub fn gen_dependencies(&self) -> syn::Result<Vec<TypeInfo>> {
+        self.values
+            .iter()
+            .map(|v| v.gen_type_info(GenerateTypeContext::empty()))
+            .collect()
     }
 
     pub fn test(&self) -> syn::Result<TokenStream> {
-        let info = self.gen_type_info(&GenerateTypeContext::empty())?;
+        let info = self.gen_type_info(GenerateTypeContext::empty())?;
         Ok(info.gen_definitions())
     }
 }
 impl GenerateTypeInfo for VDS {
-    fn gen_type_info(&self, ctx: &GenerateTypeContext) -> syn::Result<TypeInfo> {
+    fn gen_type_info(&self, ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         let mut info = self.property.gen_type_info(ctx)?;
-        info.dependencies.extend(self.gen_dependencies(ctx)?);
+        info.dependencies.extend(self.gen_dependencies()?);
         Ok(info)
     }
 }

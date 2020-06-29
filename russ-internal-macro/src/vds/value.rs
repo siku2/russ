@@ -84,15 +84,14 @@ impl Spanned for CSSIdent {
 
 pub struct Keyword(pub CSSIdent);
 impl GenerateTypeInfo for Keyword {
-    fn gen_type_info(&self, _ctx: &GenerateTypeContext) -> syn::Result<TypeInfo> {
-        let css_ident = &self.0;
-        let ident = helpers::parse_ident_with_span(
-            &format!("Kw{}", css_ident.value().to_camel_case()),
-            css_ident.span(),
-        )?;
+    fn gen_type_info(&self, _ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
+        let name = self.0.ident_camel_case()?;
+        let ident = format_ident!("Kw{}", name);
         let definition = parse_quote! { pub struct #ident; };
         let ty = parse_quote! { #ident };
-        Ok(TypeInfo::new(ty).with_definition(TypeDefinition::new(ident, definition)))
+        Ok(TypeInfo::new(ty)
+            .with_name(name)
+            .with_definition(TypeDefinition::new(ident, definition)))
     }
 }
 impl Parse for Keyword {
@@ -113,7 +112,7 @@ impl Literal {
     }
 }
 impl GenerateTypeInfo for Literal {
-    fn gen_type_info(&self, _ctx: &GenerateTypeContext) -> syn::Result<TypeInfo> {
+    fn gen_type_info(&self, _ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         //! FIXME this isn't even nearly the correct type
         Ok(TypeInfo::new(parse_quote! { ::syn::LitStr }))
     }
@@ -246,12 +245,11 @@ impl Reference {
     }
 
     pub fn ref_ident(&self) -> syn::Result<Ident> {
-        let ident = self.ref_ident_raw().ident_camel_case()?;
-        Ok(format_ident!("V{}", ident))
+        self.ref_ident_raw().ident_camel_case()
     }
 }
 impl GenerateTypeInfo for Reference {
-    fn gen_type_info(&self, _ctx: &GenerateTypeContext) -> syn::Result<TypeInfo> {
+    fn gen_type_info(&self, _ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         let ident = self.ref_ident()?;
         Ok(TypeInfo::new(parse_quote! { #ident }))
     }
@@ -274,7 +272,7 @@ impl PropertyReference {
     }
 }
 impl GenerateTypeInfo for PropertyReference {
-    fn gen_type_info(&self, _ctx: &GenerateTypeContext) -> syn::Result<TypeInfo> {
+    fn gen_type_info(&self, _ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         let ident = self.prop_ident()?;
         Ok(TypeInfo::new(parse_quote! { #ident }))
     }
@@ -290,7 +288,7 @@ pub struct Group {
     pub value: Box<CombinedValue>,
 }
 impl GenerateTypeInfo for Group {
-    fn gen_type_info(&self, ctx: &GenerateTypeContext) -> syn::Result<TypeInfo> {
+    fn gen_type_info(&self, ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         self.value.gen_type_info(ctx)
     }
 }
@@ -343,7 +341,7 @@ pub enum PrimitiveValue {
     Group(Group),
 }
 impl GenerateTypeInfo for PrimitiveValue {
-    fn gen_type_info(&self, ctx: &GenerateTypeContext) -> syn::Result<TypeInfo> {
+    fn gen_type_info(&self, ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         match self {
             Self::Keyword(value) => value.gen_type_info(ctx),
             Self::Literal(value) => value.gen_type_info(ctx),
@@ -371,7 +369,7 @@ pub struct SingleValue {
     pub comma: Option<Token![,]>,
 }
 impl GenerateTypeInfo for SingleValue {
-    fn gen_type_info(&self, ctx: &GenerateTypeContext) -> syn::Result<TypeInfo> {
+    fn gen_type_info(&self, ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         let info = self.value.gen_type_info(ctx)?;
         if let Some(multiplier) = &self.multiplier {
             multiplier.modify_type_info(info)

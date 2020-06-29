@@ -2,7 +2,7 @@ use super::{
     generate::{GenerateTypeContext, GenerateTypeInfo, TypeDefinition, TypeInfo},
     value::{PrimitiveValueType, SingleValue},
 };
-use quote::{format_ident, quote};
+use quote::format_ident;
 use syn::{
     parse::{Parse, ParseStream},
     parse_quote,
@@ -15,15 +15,16 @@ pub struct AllOrdered {
     pub components: Vec<SingleValue>,
 }
 impl AllOrdered {
-    pub fn gen_component_types(&self, ctx: &GenerateTypeContext) -> syn::Result<Vec<TypeInfo>> {
+    pub fn gen_component_types(&self, ctx: GenerateTypeContext) -> syn::Result<Vec<TypeInfo>> {
         self.components
             .iter()
-            .map(|v| v.gen_type_info(ctx))
+            .enumerate()
+            .map(|(i, v)| v.gen_type_info(ctx.fork_index(i)?))
             .collect()
     }
 }
 impl GenerateTypeInfo for AllOrdered {
-    fn gen_type_info(&self, ctx: &GenerateTypeContext) -> syn::Result<TypeInfo> {
+    fn gen_type_info(&self, ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         if self.components.len() == 1 {
             return self.components.first().unwrap().gen_type_info(ctx);
         }
@@ -52,15 +53,16 @@ pub struct AllUnordered {
     pub components: Punctuated<AllOrdered, Token![&&]>,
 }
 impl AllUnordered {
-    pub fn gen_component_types(&self, ctx: &GenerateTypeContext) -> syn::Result<Vec<TypeInfo>> {
+    pub fn gen_component_types(&self, ctx: GenerateTypeContext) -> syn::Result<Vec<TypeInfo>> {
         self.components
             .iter()
-            .map(|v| v.gen_type_info(ctx))
+            .enumerate()
+            .map(|(i, comp)| comp.gen_type_info(ctx.fork_index(i)?))
             .collect()
     }
 }
 impl GenerateTypeInfo for AllUnordered {
-    fn gen_type_info(&self, ctx: &GenerateTypeContext) -> syn::Result<TypeInfo> {
+    fn gen_type_info(&self, ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         if self.components.len() == 1 {
             return self.components.first().unwrap().gen_type_info(ctx);
         }
@@ -84,15 +86,16 @@ pub struct OneOrMoreUnordered {
     pub components: Punctuated<AllUnordered, Token![||]>,
 }
 impl OneOrMoreUnordered {
-    pub fn gen_component_types(&self, ctx: &GenerateTypeContext) -> syn::Result<Vec<TypeInfo>> {
+    pub fn gen_component_types(&self, ctx: GenerateTypeContext) -> syn::Result<Vec<TypeInfo>> {
         self.components
             .iter()
-            .map(|v| v.gen_type_info(ctx))
+            .enumerate()
+            .map(|(i, comp)| comp.gen_type_info(ctx.fork_index(i)?))
             .collect()
     }
 }
 impl GenerateTypeInfo for OneOrMoreUnordered {
-    fn gen_type_info(&self, ctx: &GenerateTypeContext) -> syn::Result<TypeInfo> {
+    fn gen_type_info(&self, ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         if self.components.len() == 1 {
             return self.components.first().unwrap().gen_type_info(ctx);
         }
@@ -119,50 +122,48 @@ pub struct Enumeration {
     pub components: Punctuated<OneOrMoreUnordered, Token![|]>,
 }
 impl Enumeration {
-    pub fn gen_component_types(&self, ctx: &GenerateTypeContext) -> syn::Result<Vec<TypeInfo>> {
+    pub fn gen_component_types(&self, ctx: GenerateTypeContext) -> syn::Result<Vec<TypeInfo>> {
         self.components
             .iter()
-            .map(|v| v.gen_type_info(ctx))
+            .enumerate()
+            .map(|(i, comp)| comp.gen_type_info(ctx.fork_index(i)?))
             .collect()
     }
 
-    fn gen_variant_ident(i: u16, info: &TypeInfo) -> Ident {
-        //! FIXME this can generate duplicate idents
-        info.get_type_ident()
+    fn gen_variant_ident(i: usize, info: &TypeInfo) -> Ident {
+        info.get_name()
             .unwrap_or_else(|| format_ident!("V{:X}", i, span = info.value_type.span()))
     }
 
-    pub fn gen_variants(
-        &self,
-        _ctx: &GenerateTypeContext,
-        deps: &[TypeInfo],
-    ) -> syn::Result<Vec<Variant>> {
-        let mut variants = Vec::with_capacity(deps.len());
-        for (i, ty) in deps.iter().enumerate() {
-            let variant_ident = Self::gen_variant_ident(i as u16, ty);
-            let variant_body = match &ty.value_type {
-                Type::Tuple(v) => quote! { #v },
-                v => quote! { (#v) },
-            };
+    fn gen_variant(i: usize, info: &TypeInfo) -> syn::Result<Variant> {
+        let variant_ident = Self::gen_variant_ident(i, info);
+        let variant_body = info.value_type_unwrap_tuple();
 
-            variants.push(parse_quote! {
-                #variant_ident#variant_body
-            });
-        }
+        Ok(parse_quote! {
+            #variant_ident(#variant_body)
+        })
+    }
 
-        Ok(variants)
+    pub fn gen_variants(deps: &[TypeInfo]) -> syn::Result<Vec<Variant>> {
+        deps.iter()
+            .enumerate()
+            .map(|(i, ty)| Self::gen_variant(i, ty))
+            .collect()
     }
 }
 impl GenerateTypeInfo for Enumeration {
-    fn gen_type_info(&self, ctx: &GenerateTypeContext) -> syn::Result<TypeInfo> {
+    fn gen_type_info(&self, ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         if self.components.len() == 1 {
             return self.components.first().unwrap().gen_type_info(ctx);
         }
 
-        let (ident, new_ctx) = ctx.namespace("value")?;
-
-        let deps = self.gen_component_types(&new_ctx)?;
-        let variants = self.gen_variants(&new_ctx, &deps)?;
+        let ident = if let Some(ident) = ctx.get_ident() {
+            ident
+        } else {
+            ctx.create_ident(&format_ident!("Inner"))?
+        };
+        let deps = self.gen_component_types(ctx)?;
+        let variants = Self::gen_variants(&deps)?;
         let definition = parse_quote! {
             pub enum #ident {
                 #(#variants),*
@@ -212,7 +213,7 @@ impl CombinedValue {
     }
 }
 impl GenerateTypeInfo for CombinedValue {
-    fn gen_type_info(&self, ctx: &GenerateTypeContext) -> syn::Result<TypeInfo> {
+    fn gen_type_info(&self, ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         match self {
             Self::Single(value) => value.gen_type_info(ctx),
             Self::AllOrdered(value) => value.gen_type_info(ctx),

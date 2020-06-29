@@ -1,40 +1,57 @@
 use super::helpers;
-use heck::CamelCase;
 use proc_macro2::{Span, TokenStream};
-use quote::quote;
+use quote::{format_ident, quote};
 use std::collections::HashSet;
 use syn::{Ident, Item, Type};
 
-#[derive(Clone, Debug)]
+// TODO consider forcing the developer to add names to constructs without a name instead of generating them.
+
+#[derive(Debug)]
 pub struct GenerateTypeContext {
     ident_hint: String,
+    is_namespace: bool,
     span: Span,
 }
 impl GenerateTypeContext {
-    fn new(ident_hint: String, span: Span) -> Self {
-        Self { ident_hint, span }
+    fn new(ident_hint: String, span: Span, is_namespace: bool) -> Self {
+        Self {
+            ident_hint,
+            span,
+            is_namespace,
+        }
     }
 
-    pub fn from_ident(ident: Ident) -> Self {
-        Self::new(ident.to_string(), ident.span())
+    pub fn from_ident(ident: Ident, is_namespace: bool) -> Self {
+        Self::new(ident.to_string(), ident.span(), is_namespace)
     }
 
     pub fn empty() -> Self {
-        Self::new(String::new(), Span::call_site())
+        Self::new(String::new(), Span::call_site(), true)
     }
 
-    pub fn namespace(&self, name: &str) -> syn::Result<(Ident, Self)> {
-        let ident = helpers::parse_ident_with_span(
-            &format!("{}{}", self.ident_hint, name.to_camel_case()),
-            self.span,
-        )?;
-        Ok((ident.clone(), Self::from_ident(ident)))
+    pub fn get_ident(&self) -> Option<Ident> {
+        if self.is_namespace {
+            None
+        } else {
+            helpers::parse_ident_with_span(&self.ident_hint, self.span).ok()
+        }
     }
 
-    pub fn namespace_ident(&self, ident: &Ident) -> syn::Result<(Ident, Self)> {
-        let ident =
-            helpers::parse_ident_with_span(&format!("{}{}", self.ident_hint, ident), ident.span())?;
-        Ok((ident.clone(), Self::from_ident(ident)))
+    pub fn create_ident(&self, ident: &Ident) -> syn::Result<Ident> {
+        helpers::parse_ident_with_span(&format!("{}{}", self.ident_hint, ident), ident.span())
+    }
+
+    pub fn fork(&self, ident: &Ident) -> syn::Result<Self> {
+        Ok(Self::from_ident(self.create_ident(ident)?, false))
+    }
+
+    pub fn fork_index(&self, index: usize) -> syn::Result<Self> {
+        self.fork(&format_ident!("V{:X}", index, span = self.span))
+    }
+
+    pub fn fork_namespace(&self, ident: &Ident) -> syn::Result<(Ident, Self)> {
+        let ident = self.create_ident(ident)?;
+        Ok((ident.clone(), Self::from_ident(ident, true)))
     }
 }
 
@@ -50,6 +67,7 @@ impl TypeDefinition {
 
 pub struct TypeInfo {
     pub value_type: Type,
+    pub name: Option<Ident>,
     pub definition: Option<TypeDefinition>,
     pub dependencies: Vec<TypeInfo>,
 }
@@ -57,9 +75,15 @@ impl TypeInfo {
     pub fn new(value_type: Type) -> Self {
         Self {
             value_type,
+            name: None,
             definition: None,
             dependencies: Vec::new(),
         }
+    }
+
+    pub fn with_name(mut self, name: Ident) -> Self {
+        self.name = Some(name);
+        self
     }
 
     pub fn with_definition(mut self, definition: TypeDefinition) -> Self {
@@ -72,24 +96,23 @@ impl TypeInfo {
         self
     }
 
-    pub fn get_type_ident(&self) -> Option<Ident> {
-        if let Some(ref def) = self.definition {
-            return Some(def.ident.clone());
+    pub fn value_type_unwrap_tuple(&self) -> TokenStream {
+        use quote::ToTokens;
+        match &self.value_type {
+            Type::Tuple(v) => v.elems.to_token_stream(),
+            v => quote! { #v },
+        }
+    }
+
+    pub fn get_name(&self) -> Option<Ident> {
+        if let Some(ref name) = self.name {
+            return Some(name.clone());
         }
 
         match self.dependencies.as_slice() {
             [first] => {
-                if let Some(ident) = first.get_type_ident() {
+                if let Some(ident) = first.get_name() {
                     return Some(ident);
-                }
-            }
-            _ => {}
-        }
-
-        match &self.value_type {
-            Type::Path(p) => {
-                if let Some(seg) = p.path.segments.last() {
-                    return Some(seg.ident.clone());
                 }
             }
             _ => {}
@@ -98,31 +121,32 @@ impl TypeInfo {
         None
     }
 
+    fn collect_infos(&self) -> Vec<&TypeInfo> {
+        let mut infos = vec![self];
+        for dep in &self.dependencies {
+            infos.extend(dep.collect_infos());
+        }
+        infos
+    }
+
+    fn iter_definitions(&self) -> impl Iterator<Item = &TypeDefinition> {
+        self.collect_infos()
+            .into_iter()
+            .filter_map(|info| info.definition.as_ref())
+    }
+
     pub fn gen_definitions(&self) -> TokenStream {
         let mut defined = HashSet::new();
-
-        let definition = self.definition.as_ref().map(|def| {
-            defined.insert(def.ident.clone());
-            &def.definition
-        });
-        let dep_defs_it = self
-            .dependencies
-            .iter()
-            .filter(|dep| {
-                if let Some(ref def) = dep.definition {
-                    defined.insert(def.ident.clone())
-                } else {
-                    false
-                }
-            })
-            .map(Self::gen_definitions);
+        let defs_it = self
+            .iter_definitions()
+            .filter(|dep| defined.insert(dep.ident.clone()))
+            .map(|dep| &dep.definition);
         quote! {
-            #definition
-            #(#dep_defs_it)*
+            #(#defs_it)*
         }
     }
 }
 
 pub trait GenerateTypeInfo {
-    fn gen_type_info(&self, ctx: &GenerateTypeContext) -> syn::Result<TypeInfo>;
+    fn gen_type_info(&self, ctx: GenerateTypeContext) -> syn::Result<TypeInfo>;
 }
