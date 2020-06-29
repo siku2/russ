@@ -251,7 +251,7 @@ impl Reference {
 impl GenerateTypeInfo for Reference {
     fn gen_type_info(&self, _ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         let ident = self.ref_ident()?;
-        Ok(TypeInfo::new(parse_quote! { #ident }))
+        Ok(TypeInfo::new(parse_quote! { #ident }).with_name(ident))
     }
 }
 impl Parse for Reference {
@@ -274,7 +274,7 @@ impl PropertyReference {
 impl GenerateTypeInfo for PropertyReference {
     fn gen_type_info(&self, _ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         let ident = self.prop_ident()?;
-        Ok(TypeInfo::new(parse_quote! { #ident }))
+        Ok(TypeInfo::new(parse_quote! { #ident }).with_name(ident))
     }
 }
 impl Parse for PropertyReference {

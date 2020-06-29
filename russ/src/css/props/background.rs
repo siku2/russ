@@ -11,7 +11,7 @@ pub struct BackgroundLayer {
     image: Option<BackgroundImage>,
     // TODO combine position / size into a single value.
     position: Option<BackgroundPosition>,
-    #[field(option, prefix = " / ")]
+    #[field(option, prefix = "/ ")]
     size: Option<BackgroundSize>,
     repeat_style: Option<BackgroundRepeatStyle>,
     attachment: Option<BackgroundAttachment>,
