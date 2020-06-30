@@ -38,8 +38,7 @@ fn generate_variant_constructor_fn(variant: &Variant) -> syn::Result<TokenStream
 
     let variant_ident_str = arg
         .and_then(|arg| arg.name)
-        .map(|name| name.value())
-        .unwrap_or_else(|| variant.ident.to_string());
+        .map_or_else(|| variant.ident.to_string(), |name| name.value());
     let variant_ident: Ident = syn::parse_str(&variant_ident_str)?;
     let fn_ident = Ident::new(
         &variant_ident.to_string().to_snake_case(),
@@ -54,8 +53,7 @@ fn generate_variant_constructor_fn(variant: &Variant) -> syn::Result<TokenStream
         let param_ident_str = field
             .ident
             .as_ref()
-            .map(|i| i.to_string())
-            .unwrap_or_else(|| format!("v{}", i));
+            .map_or_else(|| format!("v{}", i), ToString::to_string);
         syn::parse_str::<Ident>(&param_ident_str)?;
 
         let param_ident = Ident::new(&param_ident_str, field.span());
@@ -90,8 +88,13 @@ pub fn generate_variant_constructors(input: DeriveInput) -> syn::Result<TokenStr
             let functions = data
                 .variants
                 .iter()
-                .filter(|variant| !matches!(variant.fields, Fields::Unit))
-                .map(|variant| generate_variant_constructor_fn(variant))
+                .filter_map(|variant| {
+                    if matches!(variant.fields, Fields::Unit) {
+                        None
+                    } else {
+                        Some(generate_variant_constructor_fn(variant))
+                    }
+                })
                 .collect::<Result<Vec<_>, _>>()?;
 
             quote! {

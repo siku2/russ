@@ -105,7 +105,7 @@ impl Args {
     pub fn iter_unused(&self) -> impl Iterator<Item = &Ident> {
         let used_idents = self.used_args.borrow();
         self.iter()
-            .map(|arg| arg.get_ident())
+            .map(Arg::get_ident)
             .filter(move |ident| !used_idents.contains(ident))
     }
 

@@ -84,8 +84,13 @@ pub fn generate_from_variants(input: DeriveInput) -> syn::Result<TokenStream> {
         Data::Enum(data) => data
             .variants
             .iter()
-            .filter(|variant| matches!(variant.fields, Fields::Unnamed(_)))
-            .map(|variant| generate_from_variant(type_ident, variant))
+            .filter_map(|variant| {
+                if matches!(variant.fields, Fields::Unnamed(_)) {
+                    Some(generate_from_variant(type_ident, variant))
+                } else {
+                    None
+                }
+            })
             .collect::<Result<TokenStream, _>>()?,
         _ => return Err(syn::Error::new_spanned(input, "only enums are supported")),
     })

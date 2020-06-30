@@ -15,7 +15,7 @@ pub struct AllOrdered {
     pub components: Vec<SingleValue>,
 }
 impl AllOrdered {
-    pub fn gen_component_types(&self, ctx: GenerateTypeContext) -> syn::Result<Vec<TypeInfo>> {
+    pub fn gen_component_types(&self, ctx: &GenerateTypeContext) -> syn::Result<Vec<TypeInfo>> {
         self.components
             .iter()
             .enumerate()
@@ -29,7 +29,7 @@ impl GenerateTypeInfo for AllOrdered {
             return self.components.first().unwrap().gen_type_info(ctx);
         }
 
-        let deps = self.gen_component_types(ctx)?;
+        let deps = self.gen_component_types(&ctx)?;
         let types_it = deps.iter().map(|d| &d.value_type);
         let ty = parse_quote! {
             (#(#types_it),*)
@@ -53,7 +53,7 @@ pub struct AllUnordered {
     pub components: Punctuated<AllOrdered, Token![&&]>,
 }
 impl AllUnordered {
-    pub fn gen_component_types(&self, ctx: GenerateTypeContext) -> syn::Result<Vec<TypeInfo>> {
+    pub fn gen_component_types(&self, ctx: &GenerateTypeContext) -> syn::Result<Vec<TypeInfo>> {
         self.components
             .iter()
             .enumerate()
@@ -67,7 +67,7 @@ impl GenerateTypeInfo for AllUnordered {
             return self.components.first().unwrap().gen_type_info(ctx);
         }
 
-        let deps = self.gen_component_types(ctx)?;
+        let deps = self.gen_component_types(&ctx)?;
         let types_it = deps.iter().map(|d| &d.value_type);
         let ty = parse_quote! {
             (#(#types_it),*)
@@ -86,7 +86,7 @@ pub struct OneOrMoreUnordered {
     pub components: Punctuated<AllUnordered, Token![||]>,
 }
 impl OneOrMoreUnordered {
-    pub fn gen_component_types(&self, ctx: GenerateTypeContext) -> syn::Result<Vec<TypeInfo>> {
+    pub fn gen_component_types(&self, ctx: &GenerateTypeContext) -> syn::Result<Vec<TypeInfo>> {
         self.components
             .iter()
             .enumerate()
@@ -100,7 +100,7 @@ impl GenerateTypeInfo for OneOrMoreUnordered {
             return self.components.first().unwrap().gen_type_info(ctx);
         }
 
-        let deps = self.gen_component_types(ctx)?;
+        let deps = self.gen_component_types(&ctx)?;
         let opt_types_it = deps.iter().map(|d| -> Type {
             let ty = &d.value_type;
             parse_quote! { ::std::option::Option<#ty> }
@@ -122,7 +122,7 @@ pub struct Enumeration {
     pub components: Punctuated<OneOrMoreUnordered, Token![|]>,
 }
 impl Enumeration {
-    pub fn gen_component_types(&self, ctx: GenerateTypeContext) -> syn::Result<Vec<TypeInfo>> {
+    pub fn gen_component_types(&self, ctx: &GenerateTypeContext) -> syn::Result<Vec<TypeInfo>> {
         self.components
             .iter()
             .enumerate()
@@ -162,7 +162,7 @@ impl GenerateTypeInfo for Enumeration {
         } else {
             ctx.create_ident(&format_ident!("Inner"))?
         };
-        let deps = self.gen_component_types(ctx)?;
+        let deps = self.gen_component_types(&ctx)?;
         let variants = Self::gen_variants(&deps)?;
         let definition = parse_quote! {
             pub enum #ident {
@@ -233,6 +233,7 @@ impl From<SingleValue> for CombinedValue {
         Self::Single(value)
     }
 }
+#[allow(clippy::fallible_impl_from)]
 impl From<AllOrdered> for CombinedValue {
     fn from(value: AllOrdered) -> Self {
         if value.components.len() == 1 {
@@ -242,6 +243,7 @@ impl From<AllOrdered> for CombinedValue {
         }
     }
 }
+#[allow(clippy::fallible_impl_from)]
 impl From<AllUnordered> for CombinedValue {
     fn from(value: AllUnordered) -> Self {
         if value.components.len() == 1 {
@@ -251,6 +253,7 @@ impl From<AllUnordered> for CombinedValue {
         }
     }
 }
+#[allow(clippy::fallible_impl_from)]
 impl From<OneOrMoreUnordered> for CombinedValue {
     fn from(value: OneOrMoreUnordered) -> Self {
         if value.components.len() == 1 {
@@ -260,6 +263,7 @@ impl From<OneOrMoreUnordered> for CombinedValue {
         }
     }
 }
+#[allow(clippy::fallible_impl_from)]
 impl From<Enumeration> for CombinedValue {
     fn from(value: Enumeration) -> Self {
         if value.components.len() == 1 {

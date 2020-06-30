@@ -13,7 +13,7 @@ pub struct GenerateTypeContext {
     span: Span,
 }
 impl GenerateTypeContext {
-    fn new(ident_hint: String, span: Span, is_namespace: bool) -> Self {
+    const fn new(ident_hint: String, span: Span, is_namespace: bool) -> Self {
         Self {
             ident_hint,
             span,
@@ -21,7 +21,7 @@ impl GenerateTypeContext {
         }
     }
 
-    pub fn from_ident(ident: Ident, is_namespace: bool) -> Self {
+    pub fn from_ident(ident: &Ident, is_namespace: bool) -> Self {
         Self::new(ident.to_string(), ident.span(), is_namespace)
     }
 
@@ -42,7 +42,7 @@ impl GenerateTypeContext {
     }
 
     pub fn fork(&self, ident: &Ident) -> syn::Result<Self> {
-        Ok(Self::from_ident(self.create_ident(ident)?, false))
+        Ok(Self::from_ident(&self.create_ident(ident)?, false))
     }
 
     pub fn fork_index(&self, index: usize) -> syn::Result<Self> {
@@ -51,7 +51,7 @@ impl GenerateTypeContext {
 
     pub fn fork_namespace(&self, ident: &Ident) -> syn::Result<(Ident, Self)> {
         let ident = self.create_ident(ident)?;
-        Ok((ident.clone(), Self::from_ident(ident, true)))
+        Ok((ident.clone(), Self::from_ident(&ident, true)))
     }
 }
 
@@ -60,7 +60,7 @@ pub struct TypeDefinition {
     pub definition: Item,
 }
 impl TypeDefinition {
-    pub fn new(ident: Ident, definition: Item) -> Self {
+    pub const fn new(ident: Ident, definition: Item) -> Self {
         Self { ident, definition }
     }
 }
@@ -72,7 +72,7 @@ pub struct TypeInfo {
     pub dependencies: Vec<TypeInfo>,
 }
 impl TypeInfo {
-    pub fn new(value_type: Type) -> Self {
+    pub const fn new(value_type: Type) -> Self {
         Self {
             value_type,
             name: None,
@@ -91,7 +91,7 @@ impl TypeInfo {
         self
     }
 
-    pub fn with_dependencies(mut self, dependencies: Vec<TypeInfo>) -> Self {
+    pub fn with_dependencies(mut self, dependencies: Vec<Self>) -> Self {
         self.dependencies = dependencies;
         self
     }
@@ -118,7 +118,7 @@ impl TypeInfo {
         None
     }
 
-    fn collect_infos(&self) -> Vec<&TypeInfo> {
+    fn collect_infos(&self) -> Vec<&Self> {
         let mut infos = vec![self];
         for dep in &self.dependencies {
             infos.extend(dep.collect_infos());
@@ -134,10 +134,13 @@ impl TypeInfo {
 
     pub fn gen_definitions(&self) -> TokenStream {
         let mut defined = HashSet::new();
-        let defs_it = self
-            .iter_definitions()
-            .filter(|dep| defined.insert(dep.ident.clone()))
-            .map(|dep| &dep.definition);
+        let defs_it = self.iter_definitions().filter_map(|dep| {
+            if defined.insert(dep.ident.clone()) {
+                Some(&dep.definition)
+            } else {
+                None
+            }
+        });
         quote! {
             #(#defs_it)*
         }

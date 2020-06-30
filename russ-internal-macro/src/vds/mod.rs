@@ -20,8 +20,8 @@ pub struct DefinitionLine<T> {
     pub semicolon: Token![;],
 }
 impl<T> DefinitionLine<T> {
-    pub fn gen_type_info(&self, ctx: GenerateTypeContext, ident: Ident) -> syn::Result<TypeInfo> {
-        let (ident, ctx) = ctx.fork_namespace(&ident)?;
+    pub fn gen_type_info(&self, ctx: &GenerateTypeContext, ident: &Ident) -> syn::Result<TypeInfo> {
+        let (ident, ctx) = ctx.fork_namespace(ident)?;
         let value_ty = self.value.gen_type_info(ctx)?;
         let inner_value_ty = value_ty.value_type_unwrap_tuple();
         let ty = parse_quote! { #ident };
@@ -52,7 +52,7 @@ pub struct PropertyDefinition(pub DefinitionLine<PropertyReference>);
 impl GenerateTypeInfo for PropertyDefinition {
     fn gen_type_info(&self, ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         let ident = self.0.name.prop_ident()?;
-        self.0.gen_type_info(ctx, ident)
+        self.0.gen_type_info(&ctx, &ident)
     }
 }
 impl Parse for PropertyDefinition {
@@ -64,7 +64,7 @@ pub struct ValueDefinition(pub DefinitionLine<Reference>);
 impl GenerateTypeInfo for ValueDefinition {
     fn gen_type_info(&self, ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         let ident = self.0.name.ref_ident()?;
-        self.0.gen_type_info(ctx, ident)
+        self.0.gen_type_info(&ctx, &ident)
     }
 }
 impl Parse for ValueDefinition {

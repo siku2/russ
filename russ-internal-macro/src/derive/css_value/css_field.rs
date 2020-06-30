@@ -21,22 +21,21 @@ impl FieldAttr {
         }
     }
 
-    fn gen_write_separator(attr: &Option<FieldAttr>) -> TokenStream {
+    fn gen_write_separator(attr: &Option<Self>) -> TokenStream {
         let iter_separator = attr
             .as_ref()
             .and_then(|attr| attr.iter_separator.as_ref())
-            .map(|sep| sep.value())
-            .unwrap_or_else(|| String::from(","));
+            .map_or_else(|| ",".to_string(), LitStr::value);
         Self::gen_write_str(&iter_separator)
     }
 
-    fn gen_write_prefix(attr: &Option<FieldAttr>) -> Option<TokenStream> {
+    fn gen_write_prefix(attr: &Option<Self>) -> Option<TokenStream> {
         attr.as_ref()
             .and_then(|attr| attr.prefix.as_ref())
             .map(|v| Self::gen_write_str(&v.value()))
     }
 
-    fn gen_write_suffix(attr: &Option<FieldAttr>) -> Option<TokenStream> {
+    fn gen_write_suffix(attr: &Option<Self>) -> Option<TokenStream> {
         attr.as_ref()
             .and_then(|attr| attr.suffix.as_ref())
             .map(|v| Self::gen_write_str(&v.value()))
@@ -128,7 +127,7 @@ impl CSSField {
             });
         }
         if self.is_iter {
-            let write_separator = FieldAttr::gen_write_separator(&attr);
+            let write_separator = FieldAttr::gen_write_separator(attr);
 
             Ok(quote_spanned! {bind_ident.span()=>
                 let mut __v_iter = ::std::iter::IntoIterator::into_iter(#value_ident);
@@ -146,7 +145,7 @@ impl CSSField {
                 iter_option: true, ..
             })
         ) {
-            let write_separator = FieldAttr::gen_write_separator(&attr);
+            let write_separator = FieldAttr::gen_write_separator(attr);
 
             Ok(quote_spanned! {bind_ident.span()=>
                 let mut __v_iter = ::std::iter::IntoIterator::into_iter(#value_ident);
@@ -185,7 +184,7 @@ impl CSSField {
     }
 
     /// Assumes `io::Write` is in scope.
-    fn gen_write_with_before_write(&self, tokens: TokenStream) -> syn::Result<TokenStream> {
+    fn gen_write_with_before_write(&self, tokens: &TokenStream) -> syn::Result<TokenStream> {
         let Self {
             bind_ident,
             is_option,
@@ -227,7 +226,7 @@ impl CSSField {
 
     /// Assumes `io::Write` is in scope.
     pub fn gen_write(&self) -> syn::Result<TokenStream> {
-        self.gen_write_with_before_write(quote! {})
+        self.gen_write_with_before_write(&quote! {})
     }
 }
 
@@ -275,7 +274,7 @@ pub fn gen_join_fields_with_write_separator(
     };
     let write_values = fields
         .iter()
-        .map(|field| field.gen_write_with_before_write(before_write.clone()))
+        .map(|field| field.gen_write_with_before_write(&before_write))
         .collect::<Result<TokenStream, _>>()?;
 
     Ok(quote! {

@@ -83,8 +83,7 @@ fn generate_write_for_fields_tokens(
                     let unit_str = dimension
                         .unit
                         .as_ref()
-                        .map(LitStr::value)
-                        .unwrap_or_else(|| container_ident.to_string().to_lowercase());
+                        .map_or_else(|| container_ident.to_string().to_lowercase(), LitStr::value);
                     let write_value = css_fields.first().unwrap().gen_write()?;
 
                     quote! {
@@ -98,14 +97,12 @@ fn generate_write_for_fields_tokens(
                 let separator_str = function
                     .separator
                     .as_ref()
-                    .map(LitStr::value)
-                    .unwrap_or_else(|| String::from(","));
+                    .map_or_else(|| ",".to_string(), LitStr::value);
                 let write_arguments = css_field::gen_join_fields(css_fields, &separator_str)?;
-                let fn_name_str = function
-                    .name
-                    .as_ref()
-                    .map(LitStr::value)
-                    .unwrap_or_else(|| container_ident.to_string().to_kebab_case());
+                let fn_name_str = function.name.as_ref().map_or_else(
+                    || container_ident.to_string().to_kebab_case(),
+                    LitStr::value,
+                );
 
                 quote! {
                     use ::std::io::Write;
@@ -124,11 +121,10 @@ fn generate_write_for_fields_tokens(
                     ));
                 }
 
-                let value_str = keyword
-                    .value
-                    .as_ref()
-                    .map(LitStr::value)
-                    .unwrap_or_else(|| container_ident.to_string().to_kebab_case());
+                let value_str = keyword.value.as_ref().map_or_else(
+                    || container_ident.to_string().to_kebab_case(),
+                    LitStr::value,
+                );
 
                 quote! { f.write_str(#value_str) }
             }
@@ -156,8 +152,7 @@ fn generate_write_for_fields_tokens(
                     let separator_str = value
                         .separator
                         .as_ref()
-                        .map(LitStr::value)
-                        .unwrap_or_else(|| String::from(" "));
+                        .map_or_else(|| " ".to_string(), LitStr::value);
 
                     css_field::gen_join_fields(css_fields, &separator_str)?
                 };

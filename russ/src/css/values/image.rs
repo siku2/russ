@@ -49,7 +49,7 @@ where
 #[value(separator = ",")]
 pub struct GradientColorStopHint<T>(GradientColorStop<T>, Option<T>);
 impl<T> GradientColorStopHint<T> {
-    pub fn new(stop: GradientColorStop<T>, hint: Option<T>) -> Self {
+    pub const fn new(stop: GradientColorStop<T>, hint: Option<T>) -> Self {
         Self(stop, hint)
     }
 

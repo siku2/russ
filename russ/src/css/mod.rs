@@ -1,3 +1,5 @@
+#![allow(clippy::pub_enum_variant_names)]
+
 pub mod props;
 pub mod values;
 pub use russ_internal::{
@@ -17,21 +19,19 @@ use std::{iter, ops::Deref};
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Multiple<T>(Vec<T>);
 impl<T> Multiple<T> {
-    fn unchecked_new(v: Vec<T>) -> Self {
+    /// # Safety
+    /// This function doesn't check the given vector for correctness.
+    /// See `Multiple::new` for a safe alternative.
+    pub unsafe fn unchecked_new(v: Vec<T>) -> Self {
         Self(v)
-    }
-
-    /// This should only be used by the macro.
-    #[doc(hidden)]
-    pub fn __unchecked_new(v: Vec<T>) -> Self {
-        Self::unchecked_new(v)
     }
 
     pub fn new(v: Vec<T>) -> Option<Self> {
         if v.is_empty() {
             None
         } else {
-            Some(Self::unchecked_new(v))
+            // SAFETY: we checked that there is at least one element
+            Some(unsafe { Self::unchecked_new(v) })
         }
     }
 
@@ -51,7 +51,8 @@ impl<T> Multiple<T> {
     }
 
     pub fn one(v: impl Into<T>) -> Self {
-        Self::unchecked_new(vec![v.into()])
+        // SAFETY: we have exactly one element
+        unsafe { Self::unchecked_new(vec![v.into()]) }
     }
 
     pub fn one_and_more<V1, IT, V>(v: V1, others: IT) -> Self
@@ -60,11 +61,13 @@ impl<T> Multiple<T> {
         IT: IntoIterator<Item = V>,
         V: Into<T>,
     {
-        Self::unchecked_new(
-            iter::once(v.into())
-                .chain(others.into_iter().map(Into::into))
-                .collect(),
-        )
+        unsafe {
+            Self::unchecked_new(
+                iter::once(v.into())
+                    .chain(others.into_iter().map(Into::into))
+                    .collect(),
+            )
+        }
     }
 
     fn first(&self) -> &T {

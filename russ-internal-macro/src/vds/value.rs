@@ -39,14 +39,14 @@ impl CSSIdent {
         helpers::parse_ident_with_span(&name, self.0.span())
     }
 
-    pub fn gen_parse_any_ident(get_parse_stream: Expr) -> Expr {
+    pub fn gen_parse_any_ident(get_parse_stream: &Expr) -> Expr {
         helpers::gen_parse_type(
-            parse_quote! {  ::russ_internal_macro::vds::CSSIdent },
+            &parse_quote! {  ::russ_internal_macro::vds::CSSIdent },
             get_parse_stream,
         )
     }
 
-    pub fn gen_parse(&self, get_parse_stream: Expr) -> Expr {
+    pub fn gen_parse(&self, get_parse_stream: &Expr) -> Expr {
         let parse_ident = Self::gen_parse_any_ident(get_parse_stream);
         let value = self.value();
         let err_msg = format!("expected `{}`", value);
@@ -102,11 +102,11 @@ impl Parse for Keyword {
 
 pub struct Literal(pub LitStr);
 impl Literal {
-    pub fn gen_parse(&self, get_parse_stream: Expr) -> syn::Result<Expr> {
+    pub fn gen_parse(&self, get_parse_stream: &Expr) -> syn::Result<Expr> {
         let value = TokenStream::from_str(&self.0.value())?;
         // TODO handle non-punctuation
         Ok(helpers::gen_parse_type(
-            parse_quote! { ::syn::Token![#value] },
+            &parse_quote! { ::syn::Token![#value] },
             get_parse_stream,
         ))
     }
@@ -148,23 +148,21 @@ impl ClosedRange {
         let min = self
             .min
             .as_ref()
-            .map(ToString::to_string)
-            .unwrap_or_else(|| "-inf".to_string());
+            .map_or_else(|| "-inf".to_string(), ToString::to_string);
         let max = self
             .max
             .as_ref()
-            .map(ToString::to_string)
-            .unwrap_or_else(|| "+inf".to_string());
+            .map_or_else(|| "+inf".to_string(), ToString::to_string);
         format!("[{},{}]", min, max)
     }
 
     /// Generates an expression that returns `syn::Result<()>`.
-    pub fn gen_range_check(&self, value_ident: Ident) -> Expr {
+    pub fn gen_range_check(&self, value_ident: &Ident) -> Expr {
         let Self { min, max, .. } = self;
         let err_msg = format!("value must be in closed range {}", self.format_range());
 
         let result_ok: Expr = parse_quote! { ::std::result::Result::Ok(()) };
-        let low_check = min.as_ref().map(|min| {
+        let low_check = min.as_ref().map_or_else(|| result_ok.clone(), |min| {
             parse_quote! {
                 if #value_ident < #min {
                     ::std::result::Result::Err(::syn::Error::new_spanned(::syn::spanned::Spanned::span(&#value_ident), #err_msg))
@@ -172,7 +170,7 @@ impl ClosedRange {
                     #result_ok
                 }
             }
-        }).unwrap_or_else(|| result_ok.clone());
+        });
         let high_check = max.as_ref().map(|max| {
             parse_quote! {
                 if #value_ident > #max {
@@ -240,7 +238,7 @@ impl Parse for InnerReference {
 
 pub struct Reference(pub AngleBracketed<InnerReference>);
 impl Reference {
-    pub fn ref_ident_raw(&self) -> &CSSIdent {
+    pub const fn ref_ident_raw(&self) -> &CSSIdent {
         &self.0.content.ident
     }
 
@@ -262,7 +260,7 @@ impl Parse for Reference {
 
 pub struct PropertyReference(pub AngleBracketed<LitStr>);
 impl PropertyReference {
-    pub fn prop_lit(&self) -> &LitStr {
+    pub const fn prop_lit(&self) -> &LitStr {
         &self.0.content
     }
 

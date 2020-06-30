@@ -157,7 +157,7 @@ pub enum Color {
 }
 impl Color {
     /// Only 6 character hex colors are supported.
-    pub fn hex(hex: HexValueType) -> Self {
+    pub const fn hex(hex: HexValueType) -> Self {
         Self::Hex(hex)
     }
 
@@ -211,6 +211,7 @@ impl Color {
         }
     }
 
+    #[allow(clippy::trivially_copy_pass_by_ref)]
     fn write_hex(f: &mut CSSWriter, hex: &HexValueType) -> WriteResult {
         write!(f, "{:06X}", hex)
     }

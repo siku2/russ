@@ -110,8 +110,8 @@ impl CSSKey {
         Self(h.finish())
     }
 
-    pub fn unique_id(&self) -> String {
-        format!("{:x}", &self.0)
+    pub fn unique_id(self) -> String {
+        format!("{:x}", self.0)
     }
 }
 
@@ -143,6 +143,7 @@ impl Styles {
 #[derive(Debug, Eq, Hash, PartialEq)]
 pub struct StyleSheet(String);
 impl StyleSheet {
+    #[must_use = "style sheet is removed when this is dropped"]
     pub fn attach(id: Cow<str>, body: &str) -> Option<Self> {
         if bindings::add_style_sheet(&id, body) {
             Some(Self(id.into_owned()))
@@ -172,8 +173,8 @@ pub struct StyleManager {
     sheets: HashMap<CSSKey, Weak<StyleSheet>>,
 }
 impl StyleManager {
-    fn get(&self, key: &CSSKey) -> Option<StyleSheetRef> {
-        self.sheets.get(key).and_then(Weak::upgrade)
+    fn get(&self, key: CSSKey) -> Option<StyleSheetRef> {
+        self.sheets.get(&key).and_then(Weak::upgrade)
     }
 
     fn track_sheet(&mut self, key: CSSKey, sheet_ref: StyleSheet) -> StyleSheetRef {
@@ -197,7 +198,7 @@ impl StyleManager {
     }
 
     pub fn track_styles_with_key(&mut self, key: CSSKey, styles: &Styles) -> StyleSheetRef {
-        self.get(&key)
+        self.get(key)
             .unwrap_or_else(|| self.add_styles_with_key(key, styles))
     }
 

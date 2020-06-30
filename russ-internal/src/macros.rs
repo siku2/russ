@@ -4,7 +4,8 @@
 #[macro_export]
 macro_rules! multiple {
     ($v:expr, $($others:expr),+ $(,)?) => (
-        ::russ::css::Multiple::__unchecked_new(::std::vec![$v, $($others),*])
+        // SAFETY: we have at least 1 element
+        unsafe { ::russ::css::Multiple::unchecked_new(::std::vec![$v, $($others),*]) }
     );
 }
 

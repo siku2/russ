@@ -10,11 +10,6 @@ use syn::{
 pub struct ZeroOrMore {
     pub asteriks: Token![*],
 }
-impl ZeroOrMore {
-    pub fn wrap_type(&self, ty: Type) -> syn::Result<Type> {
-        Ok(parse_quote! { ::std::vec::Vec<#ty> })
-    }
-}
 impl Parse for ZeroOrMore {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let asteriks = input.parse()?;
@@ -24,11 +19,6 @@ impl Parse for ZeroOrMore {
 
 pub struct OneOrMore {
     pub plus: Token![+],
-}
-impl OneOrMore {
-    pub fn wrap_type(&self, ty: Type) -> syn::Result<Type> {
-        Ok(parse_quote! { ::std::vec::Vec<#ty> })
-    }
 }
 impl Parse for OneOrMore {
     fn parse(input: ParseStream) -> syn::Result<Self> {
@@ -40,11 +30,7 @@ impl Parse for OneOrMore {
 pub struct Optional {
     pub question_mark: Token![?],
 }
-impl Optional {
-    pub fn wrap_type(&self, ty: Type) -> syn::Result<Type> {
-        Ok(parse_quote! { ::std::option::Option<#ty> })
-    }
-}
+impl Optional {}
 impl Parse for Optional {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let question_mark = input.parse()?;
@@ -70,13 +56,13 @@ impl Range {
         }
 
         let min = self.min.base10_parse()?;
-        let max = self.max.as_ref().map(|n| n.base10_parse()).transpose()?;
+        let max = self.max.as_ref().map(LitInt::base10_parse).transpose()?;
         Ok((min, max))
     }
 
     /// Generates a type representing the range.
     /// This will be a vector for infinite ranges and a tuple for finite ones.
-    pub fn wrap_type(&self, ty: Type) -> syn::Result<Type> {
+    pub fn wrap_type(&self, ty: &Type) -> syn::Result<Type> {
         let (lo, hi) = self.get_range()?;
         if let Some(hi) = hi {
             let required_fields = (0..lo).map(|_| ty.clone());
@@ -93,9 +79,9 @@ impl Range {
         &self,
         lo: usize,
         hi: usize,
-        value_ty: Type,
-        parse: Expr,
-        can_continue: Expr,
+        value_ty: &Type,
+        parse: &Expr,
+        can_continue: &Expr,
     ) -> syn::Result<Expr> {
         if lo > hi {
             return Err(syn::Error::new(
@@ -151,9 +137,9 @@ impl Range {
     fn gen_parse_infinite_range(
         &self,
         lo: usize,
-        value_ty: Type,
-        parse: Expr,
-        can_continue: Expr,
+        value_ty: &Type,
+        parse: &Expr,
+        can_continue: &Expr,
     ) -> syn::Result<Expr> {
         let ty = self.wrap_type(value_ty)?;
         let parse_required_it = (0..lo).map(|_| -> Expr {
@@ -175,7 +161,12 @@ impl Range {
 
     /// Generates an expression returning `syn::Result<T>` where T is the type returned by `gen_type`.
     /// `parse` is an expression that should return `syn::Result<T>` where T is `value_ty`.
-    pub fn gen_parse(&self, value_ty: Type, parse: Expr, can_continue: Expr) -> syn::Result<Expr> {
+    pub fn gen_parse(
+        &self,
+        value_ty: &Type,
+        parse: &Expr,
+        can_continue: &Expr,
+    ) -> syn::Result<Expr> {
         let (lo, hi) = self.get_range()?;
         if lo == 0 {
             return Err(syn::Error::new(
@@ -220,11 +211,7 @@ impl Parse for Range {
 pub struct OneOrMoreComma {
     pub hash: Token![#],
 }
-impl OneOrMoreComma {
-    pub fn wrap_type(&self, ty: Type) -> syn::Result<Type> {
-        Ok(parse_quote! { ::std::vec::Vec<#ty> })
-    }
-}
+impl OneOrMoreComma {}
 impl Parse for OneOrMoreComma {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let hash = input.parse()?;
@@ -235,11 +222,7 @@ impl Parse for OneOrMoreComma {
 pub struct Required {
     pub exclamation: Token![!],
 }
-impl Required {
-    pub fn wrap_type(&self, ty: Type) -> syn::Result<Type> {
-        Ok(ty)
-    }
-}
+impl Required {}
 impl Parse for Required {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let exclamation = input.parse()?;
@@ -288,12 +271,12 @@ impl Multiplier {
     pub fn modify_type_info(&self, mut info: TypeInfo) -> syn::Result<TypeInfo> {
         let ty = info.value_type;
         info.value_type = match self {
-            Self::ZeroOrMore(value) => value.wrap_type(ty)?,
-            Self::OneOrMore(value) => value.wrap_type(ty)?,
-            Self::Optional(value) => value.wrap_type(ty)?,
-            Self::Range(value) => value.wrap_type(ty)?,
-            Self::OneOrMoreComma(value) => value.wrap_type(ty)?,
-            Self::Required(value) => value.wrap_type(ty)?,
+            Self::ZeroOrMore(_) | Self::OneOrMore(_) | Self::OneOrMoreComma(_) => {
+                parse_quote! { ::std::vec::Vec<#ty> }
+            }
+            Self::Optional(_) => parse_quote! { ::std::option::Option<#ty> },
+            Self::Range(value) => value.wrap_type(&ty)?,
+            Self::Required(_) => ty,
         };
         Ok(info)
     }
