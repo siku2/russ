@@ -84,10 +84,7 @@ impl Range {
         can_continue: &Expr,
     ) -> syn::Result<Expr> {
         if lo > hi {
-            return Err(syn::Error::new(
-                self.max.span(),
-                "upper bound must be higher than lower bound",
-            ));
+            proc_macro_error::abort!(self.max, "upper bound must be higher than lower bound");
         }
 
         let required_idents: Vec<_> = (0..lo)
@@ -169,10 +166,7 @@ impl Range {
     ) -> syn::Result<Expr> {
         let (lo, hi) = self.get_range()?;
         if lo == 0 {
-            return Err(syn::Error::new(
-                self.min.span(),
-                "lower bound must not be 0",
-            ));
+            proc_macro_error::abort!(self.min, "lower bound 0 is currently unimplemented");
         }
 
         if let Some(hi) = hi {
