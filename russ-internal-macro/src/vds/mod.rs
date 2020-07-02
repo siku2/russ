@@ -5,6 +5,7 @@ use syn::{
     parse::{Parse, ParseStream},
     parse_quote, Ident, Token,
 };
+pub use value::CSSIdent;
 use value::{PropertyReference, Reference};
 
 mod combined;
@@ -12,6 +13,8 @@ mod generate;
 mod helpers;
 mod multiplier;
 mod value;
+
+// TODO use syn::custom_keyword! for keywords
 
 pub struct DefinitionLine<T> {
     pub name: T,

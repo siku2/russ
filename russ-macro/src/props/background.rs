@@ -1,5 +1,7 @@
-use crate::values::{Color, CssBox, Image, LengthPercentage};
+use crate::values::{Color, Image, LengthPercentage};
 use russ_internal_macro::vds;
+
+// https://www.w3.org/TR/css-backgrounds-3/
 
 vds! { <"background-color"> = <color>; }
 
@@ -20,13 +22,21 @@ vds! {
 
 vds! {
     <"background-position"> = <bg-position>#;
-    <bg-position> = [ left | center | right | top | bottom | <length-percentage> ] |
-                    [ left | center | right | <length-percentage> ] [ top | center | bottom | <length-percentage> ] |
-                    [ center | [ left | right ] <length-percentage>? ] && [ center | [ top | bottom ] <length-percentage>? ];
+    <bg-position> = [
+        [ left | center | right | top | bottom | <length-percentage> ]
+    |
+        [ left | center | right | <length-percentage> ]
+        [ top | center | bottom | <length-percentage> ]
+    |
+        [ center | [ left | right ] <length-percentage>? ] &&
+        [ center | [ top | bottom ] <length-percentage>? ]
+    ];
 }
 
 vds! {
-    <"background-clip"> = <css-box>#;
+    <"background-clip"> = <bg-clip>#;
+    <bg-clip> = <css-box> | border | text;
+    <css-box> = border-box | padding-box | content-box;
 }
 
 vds! {

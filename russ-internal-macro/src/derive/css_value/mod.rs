@@ -94,6 +94,7 @@ fn generate_write_for_fields_tokens(
                 }
             }
             CSSValueAttr::Function(function) => {
+                // TODO apparently space should be the default separator, not comma
                 let separator_str = function
                     .separator
                     .as_ref()

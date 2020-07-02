@@ -6,6 +6,8 @@ use syn::{
     LitFloat, LitInt, Token,
 };
 
+// https://www.w3.org/TR/css-values-4/#numeric-types
+
 pub struct Integer {
     raw: (Option<Token![+]>, LitInt),
     pub value: i32,
