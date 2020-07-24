@@ -3,7 +3,7 @@ use generate::{GenerateTypeContext, GenerateTypeInfo, TypeDefinition, TypeInfo};
 use proc_macro2::TokenStream;
 use syn::{
     parse::{Parse, ParseStream},
-    parse_quote, Ident, Token,
+    parse_quote, Ident, LitStr, Token,
 };
 pub use value::CSSIdent;
 use value::{PropertyReference, Reference};
@@ -16,13 +16,13 @@ mod value;
 
 // TODO use syn::custom_keyword! for keywords
 
-pub struct DefinitionLine<T> {
+pub struct GenericDefinitionLine<T> {
     pub name: T,
     pub equals_sign: Token![=],
     pub value: CombinedValue,
     pub semicolon: Token![;],
 }
-impl<T> DefinitionLine<T> {
+impl<T> GenericDefinitionLine<T> {
     pub fn gen_type_info(&self, ctx: &GenerateTypeContext, ident: &Ident) -> syn::Result<TypeInfo> {
         let (ident, ctx) = ctx.fork_namespace(ident)?;
         let value_ty = self.value.gen_type_info(ctx)?;
@@ -36,7 +36,7 @@ impl<T> DefinitionLine<T> {
             .with_dependencies(vec![value_ty]))
     }
 }
-impl<T: Parse> Parse for DefinitionLine<T> {
+impl<T: Parse> Parse for GenericDefinitionLine<T> {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let name = input.parse()?;
         let equals_sign = input.parse()?;
@@ -51,7 +51,7 @@ impl<T: Parse> Parse for DefinitionLine<T> {
     }
 }
 
-pub struct PropertyDefinition(pub DefinitionLine<PropertyReference>);
+pub struct PropertyDefinition(pub GenericDefinitionLine<PropertyReference>);
 impl GenerateTypeInfo for PropertyDefinition {
     fn gen_type_info(&self, ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         let ident = self.0.name.prop_ident()?;
@@ -63,7 +63,7 @@ impl Parse for PropertyDefinition {
         input.parse().map(Self)
     }
 }
-pub struct ValueDefinition(pub DefinitionLine<Reference>);
+pub struct ValueDefinition(pub GenericDefinitionLine<Reference>);
 impl GenerateTypeInfo for ValueDefinition {
     fn gen_type_info(&self, ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         let ident = self.0.name.ref_ident()?;
@@ -76,8 +76,30 @@ impl Parse for ValueDefinition {
     }
 }
 
+pub enum Definition {
+    Property(PropertyDefinition),
+    Value(ValueDefinition),
+}
+impl GenerateTypeInfo for Definition {
+    fn gen_type_info(&self, ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
+        match self {
+            Self::Property(v) => v.gen_type_info(ctx),
+            Self::Value(v) => v.gen_type_info(ctx),
+        }
+    }
+}
+impl Parse for Definition {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        if input.peek2(LitStr) {
+            input.parse().map(Self::Property)
+        } else {
+            input.parse().map(Self::Value)
+        }
+    }
+}
+
 pub struct VDS {
-    pub property: PropertyDefinition,
+    pub definition: Definition,
     pub values: Vec<ValueDefinition>,
 }
 impl VDS {
@@ -95,7 +117,7 @@ impl VDS {
 }
 impl GenerateTypeInfo for VDS {
     fn gen_type_info(&self, ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
-        let mut info = self.property.gen_type_info(ctx)?;
+        let mut info = self.definition.gen_type_info(ctx)?;
         info.dependencies.extend(self.gen_dependencies()?);
         Ok(info)
     }
@@ -108,6 +130,9 @@ impl Parse for VDS {
             values.push(input.parse()?);
         }
 
-        Ok(Self { property, values })
+        Ok(Self {
+            definition: property,
+            values,
+        })
     }
 }

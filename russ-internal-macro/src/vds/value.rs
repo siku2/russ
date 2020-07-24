@@ -14,11 +14,12 @@ use std::{
 use syn::{
     bracketed,
     ext::IdentExt,
+    parenthesized,
     parse::{Parse, ParseStream},
     parse_quote,
     punctuated::Punctuated,
     spanned::Spanned,
-    token, Expr, Ident, LitInt, LitStr, Token,
+    token, Expr, Ident, LitInt, LitStr, Token, TypePath,
 };
 
 #[derive(Clone)]
@@ -123,17 +124,48 @@ impl Parse for Literal {
     }
 }
 
+pub struct InWrapper {
+    pub in_: Token![in],
+    pub wrapper: TypePath,
+}
+impl Parse for InWrapper {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let in_ = input.parse()?;
+        let wrapper = input.parse()?;
+        Ok(Self { in_, wrapper })
+    }
+}
+
 pub struct AngleBracketed<T> {
     pub lt: Token![<],
     pub content: T,
+    pub in_wrapper: Option<InWrapper>,
     pub gt: Token![>],
+}
+impl<T> AngleBracketed<T> {
+    pub fn modify_type_info(&self, info: &mut TypeInfo) {
+        if let Some(InWrapper { ref wrapper, .. }) = self.in_wrapper {
+            let ty = &info.value_type;
+            info.value_type = parse_quote! { #wrapper<#ty> };
+        }
+    }
 }
 impl<T: Parse> Parse for AngleBracketed<T> {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let lt = input.parse()?;
         let content = T::parse(input)?;
+        let in_wrapper = if input.peek(Token![in]) {
+            Some(input.parse()?)
+        } else {
+            None
+        };
         let gt = input.parse()?;
-        Ok(Self { lt, content, gt })
+        Ok(Self {
+            lt,
+            content,
+            in_wrapper,
+            gt,
+        })
     }
 }
 
@@ -249,7 +281,9 @@ impl Reference {
 impl GenerateTypeInfo for Reference {
     fn gen_type_info(&self, _ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         let ident = self.ref_ident()?;
-        Ok(TypeInfo::new(parse_quote! { #ident }).with_name(ident))
+        let mut info = TypeInfo::new(parse_quote! { #ident }).with_name(ident);
+        self.0.modify_type_info(&mut info);
+        Ok(info)
     }
 }
 impl Parse for Reference {
@@ -272,7 +306,9 @@ impl PropertyReference {
 impl GenerateTypeInfo for PropertyReference {
     fn gen_type_info(&self, _ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         let ident = self.prop_ident()?;
-        Ok(TypeInfo::new(parse_quote! { #ident }).with_name(ident))
+        let mut info = TypeInfo::new(parse_quote! { #ident }).with_name(ident);
+        self.0.modify_type_info(&mut info);
+        Ok(info)
     }
 }
 impl Parse for PropertyReference {
@@ -303,12 +339,35 @@ impl Parse for Group {
     }
 }
 
+pub struct Parenthesized {
+    pub paren: token::Paren,
+    pub value: Box<CombinedValue>,
+}
+impl GenerateTypeInfo for Parenthesized {
+    fn gen_type_info(&self, ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
+        self.value.gen_type_info(ctx)
+    }
+}
+impl Parse for Parenthesized {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let content;
+        let paren = parenthesized!(content in input);
+        let value = Box::new(content.parse()?);
+        if !content.is_empty() {
+            return Err(content.error("unexpected tokens in parentheses"));
+        }
+
+        Ok(Self { paren, value })
+    }
+}
+
 pub enum PrimitiveValueType {
     Keyword,
     Literal,
     Reference,
     PropertyReference,
     Group,
+    Parenthesized,
 }
 impl PrimitiveValueType {
     pub fn peek_variant(input: ParseStream) -> syn::Result<Self> {
@@ -321,6 +380,8 @@ impl PrimitiveValueType {
             }
         } else if lookahead.peek(token::Bracket) {
             Ok(Self::Group)
+        } else if lookahead.peek(token::Paren) {
+            Ok(Self::Parenthesized)
         } else if lookahead.peek(Ident) {
             Ok(Self::Keyword)
         } else if lookahead.peek(LitStr) {
@@ -337,6 +398,7 @@ pub enum PrimitiveValue {
     Reference(Reference),
     PropertyReference(PropertyReference),
     Group(Group),
+    Parenthesized(Parenthesized),
 }
 impl GenerateTypeInfo for PrimitiveValue {
     fn gen_type_info(&self, ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
@@ -346,6 +408,7 @@ impl GenerateTypeInfo for PrimitiveValue {
             Self::Reference(value) => value.gen_type_info(ctx),
             Self::PropertyReference(value) => value.gen_type_info(ctx),
             Self::Group(value) => value.gen_type_info(ctx),
+            Self::Parenthesized(value) => value.gen_type_info(ctx),
         }
     }
 }
@@ -357,6 +420,7 @@ impl Parse for PrimitiveValue {
             PrimitiveValueType::Reference => input.parse().map(Self::Reference),
             PrimitiveValueType::PropertyReference => input.parse().map(Self::PropertyReference),
             PrimitiveValueType::Group => input.parse().map(Self::Group),
+            PrimitiveValueType::Parenthesized => input.parse().map(Self::Parenthesized),
         }
     }
 }
