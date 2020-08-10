@@ -1,12 +1,10 @@
-use super::{
-    Angle, Flex, Frequency, Length, Number, NumberValueType, Percentage, Resolution, Time,
-};
+/// <https://www.w3.org/TR/css-values-3/#functional-notations>
 use russ_internal::{CssValue, CssWriter, FromVariants, WriteResult, WriteValue};
 
 // TODO perhaps use Calc<T> where T is a dimension (Angle, Length) so that CalcValue only allows that particular dimension
 //      Need to verify if this is actually valid though.
 
-// https://developer.mozilla.org/en-US/docs/Web/CSS/calc
+/// <https://www.w3.org/TR/css-values-3/#calc-notation>
 #[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
 #[function]
 pub struct Calc(CalcSum);
@@ -68,6 +66,7 @@ impl WriteValue for CalcSum {
         Ok(())
     }
 }
+
 impl<T> From<T> for CalcSum
 where
     T: Into<CalcProduct>,
@@ -105,6 +104,7 @@ impl WriteValue for CalcProduct {
         Ok(())
     }
 }
+
 impl<T> From<T> for CalcProduct
 where
     T: Into<CalcValue>,
@@ -128,6 +128,7 @@ pub enum CalcValue {
     Resolution(Resolution),
     Time(Time),
 }
+
 impl<T> From<T> for CalcValue
 where
     T: Into<NumberValueType>,
@@ -140,4 +141,38 @@ impl From<Calc> for CalcValue {
     fn from(v: Calc) -> Self {
         Self::CalcSum(Box::new(v.0))
     }
+}
+
+// TODO finish implementation
+/// <https://www.w3.org/TR/css-values-3/#attr-notation>
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
+#[function]
+pub struct Attr {
+    pub name: String,
+    pub kind: Option<AttrKind>,
+    // TODO fallback can be any value
+    pub fallback: Option<String>,
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
+pub enum AttrKind {
+    #[keyword]
+    String,
+    #[keyword]
+    Color,
+    #[keyword]
+    Url,
+    #[keyword]
+    Integer,
+    #[keyword]
+    Number,
+    #[keyword]
+    Length,
+    #[keyword]
+    Angle,
+    #[keyword]
+    Time,
+    #[keyword]
+    Frequency,
+    // TODO support for '%': https://www.w3.org/TR/css-values-4/#valdef-type-or-value
 }

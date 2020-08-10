@@ -1,5 +1,5 @@
-pub mod bindings;
-pub mod css;
-mod styles;
-
 pub use styles::*;
+
+pub mod bindings;
+mod modules;
+mod styles;

@@ -1,4 +1,5 @@
-use super::Calc;
+/// <https://www.w3.org/TR/css-values-3/#numeric-types>
+use super::units::{Angle, Frequency, Length, Time};
 use russ_internal::{CssValue, CssWriter, FromVariants, WriteResult, WriteValue};
 use std::{
     cmp::{Ordering, PartialEq, PartialOrd},
@@ -6,35 +7,9 @@ use std::{
     io::Write,
 };
 
-// https://developer.mozilla.org/en-US/docs/Web/CSS/custom-ident
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct CustomIdent(String);
-impl WriteValue for CustomIdent {
-    fn write_value(&self, f: &mut CssWriter) -> WriteResult {
-        f.write_str(&self.0)
-    }
-}
-
-// https://developer.mozilla.org/en-US/docs/Web/CSS/string
-#[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct CssString(String);
-impl WriteValue for CssString {
-    fn write_value(&self, f: &mut CssWriter) -> WriteResult {
-        write!(f, "\"{}\"", self.0.replace("\"", "\\\""))
-    }
-}
-impl<T> From<T> for CssString
-where
-    T: Into<String>,
-{
-    fn from(v: T) -> Self {
-        Self(v.into())
-    }
-}
-
 pub type IntegerValueType = i32;
 
-// https://developer.mozilla.org/en-US/docs/Web/CSS/integer
+/// <https://www.w3.org/TR/css-values-3/#integers>
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromVariants)]
 pub enum Integer {
     #[from_variant(into)]
@@ -62,6 +37,7 @@ impl PartialOrd for Integer {
         }
     }
 }
+
 impl From<Calc> for Integer {
     fn from(v: Calc) -> Self {
         Self::Calc(Box::new(v))
@@ -70,11 +46,12 @@ impl From<Calc> for Integer {
 
 pub type NumberValueType = f64;
 
-// https://developer.mozilla.org/en-US/docs/Web/CSS/number
+//. <https://www.w3.org/TR/css-values-3/#numbers>
 #[derive(Clone, Debug, FromVariants)]
 pub enum Number {
     #[from_variant(into)]
     Value(NumberValueType),
+    // TODO is this really correct?
     Calc(Box<Calc>),
 }
 impl WriteValue for Number {
@@ -117,23 +94,18 @@ impl PartialOrd for Number {
         }
     }
 }
+
 impl From<Calc> for Number {
     fn from(v: Calc) -> Self {
         Self::Calc(Box::new(v))
     }
 }
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, FromVariants)]
-pub enum NumberPercentage {
-    #[from_variant(into)]
-    Number(Number),
-    Percentage(Percentage),
-}
-
-// https://developer.mozilla.org/en-US/docs/Web/CSS/percentage
+/// <https://www.w3.org/TR/css-values-3/#percentages>
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq, PartialOrd, CssValue)]
 #[dimension(unit = "%")]
 pub struct Percentage(pub Number);
+
 impl<T> From<T> for Percentage
 where
     T: Into<Number>,
@@ -143,30 +115,17 @@ where
     }
 }
 
-// TODO manual eq, ord implementation so that 16/4 == 4/1
-// https://developer.mozilla.org/en-US/docs/Web/CSS/ratio
-#[derive(Clone, Debug, Eq, Hash, PartialEq, PartialOrd, CssValue)]
-#[value(separator = "/")]
-pub struct Ratio(pub Integer, pub Integer);
-impl<W, H> From<(W, H)> for Ratio
-where
-    W: Into<Integer>,
-    H: Into<Integer>,
-{
-    fn from((w, h): (W, H)) -> Self {
-        Self(w.into(), h.into())
-    }
+// TODO fix codegen
+/// <https://www.w3.org/TR/css-values-3/#mixed-percentages>
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, FromVariants)]
+pub enum ValuePercentage<T> {
+    #[from_variant(into)]
+    Value(T),
+    Percentage(Percentage),
 }
 
-// https://developer.mozilla.org/en-US/docs/Web/CSS/url
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, CssValue)]
-#[function]
-pub struct Url(CssString);
-impl<T> From<T> for Url
-where
-    T: Into<CssString>,
-{
-    fn from(v: T) -> Self {
-        Self(v.into())
-    }
-}
+pub type LengthPercentage = ValuePercentage<Length>;
+pub type FrequencyPercentage = ValuePercentage<Frequency>;
+pub type AnglePercentage = ValuePercentage<Angle>;
+pub type TimePercentage = ValuePercentage<Time>;
+pub type NumberPercentage = ValuePercentage<Number>;

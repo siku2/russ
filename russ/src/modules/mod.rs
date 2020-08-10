@@ -1,12 +1,11 @@
-#![allow(clippy::pub_enum_variant_names)]
-
-pub mod props;
-pub mod values;
 pub use russ_internal::{
     multiple, vec_into, CssDeclaration, CssValue, CssWriter, WriteDeclaration, WriteResult,
     WriteValue,
 };
 use std::{iter, ops::Deref};
+
+mod backgrounds;
+mod values;
 
 /// Collection of at least one item.
 /// Internally this is a vector but with some additional guards.
