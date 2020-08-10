@@ -1,5 +1,4 @@
 mod derive;
-mod vds;
 
 use syn::{parse_macro_input, DeriveInput};
 
@@ -32,10 +31,4 @@ pub fn derive_from_variants(input: proc_macro::TokenStream) -> proc_macro::Token
 pub fn derive_variant_constructors(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     to_token_stream(derive::generate_variant_constructors(input))
-}
-
-#[proc_macro]
-pub fn vds(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let v = parse_macro_input!(input as vds::VDS);
-    to_token_stream(v.test())
 }

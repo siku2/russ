@@ -1,5 +1,5 @@
 use super::{
-    Angle, AnglePercentage, CssString, Color, LengthPercentage, Percentage, Position, Resolution,
+    Angle, AnglePercentage, Color, CssString, LengthPercentage, Percentage, Position, Resolution,
     Url,
 };
 use crate::css::Multiple;

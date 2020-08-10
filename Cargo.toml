@@ -1,2 +1,2 @@
 [workspace]
-members = ["russ", "russ-macro", "russ-internal", "russ-internal-macro"]
+members = ["russ", "russ-internal", "russ-internal-macro"]
