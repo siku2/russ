@@ -1,0 +1,58 @@
+# https://www.w3.org/TR/css-images-4
+[image-resolution]
+value = "[ from-image || <resolution> ] && snap?"
+
+[image]
+kind = "type"
+value = "<url> | <image()> | <image-set()> | <cross-fade()> | <gradient>"
+definitions = """
+  <image()> = image( <image-tags>? [ <image-src>? , <color>? ]! )
+  <image-tags> = [ ltr | rtl ]
+  <image-src> = [ <url> | <string> ]
+"""
+
+[gradient]
+kind = "type"
+value = """
+  [ <linear-gradient()> | <repeating-linear-gradient()> |
+    <radial-gradient()> | <repeating-radial-gradient()> |
+    <conic-gradient()>  | <repeating-conic-gradient()>  ]
+"""
+definitions = """
+  <linear-gradient()> = linear-gradient(
+    [ <angle> | to <side-or-corner> ]? ,
+    <color-stop-list>
+  )
+  <side-or-corner> = [left | right] || [top | bottom]
+
+  <radial-gradient()> = radial-gradient(
+    [ [ circle               || <length> ]                          [ at <position> ]? , |
+      [ ellipse              || <length-percentage>{2} ]            [ at <position> ]? , |
+      [ [ circle | ellipse ] || <extent-keyword> ]                  [ at <position> ]? , |
+      at <position> ,
+    ]?
+    <color-stop> [ , <color-stop> ]+
+  )
+  <extent-keyword> = closest-corner | closest-side | farthest-corner | farthest-side
+
+  <conic-gradient()> = conic-gradient(
+    [ from <angle> ]? [ at <position> ]?,
+    <angular-color-stop-list>
+  )
+
+  <repeating-linear-gradient()> = <linear-gradient()>
+  <repeating-radial-gradient()> = <radial-gradient()>
+  <repeating-conic-gradient()> = <conic-gradient()>
+
+  <color-stop-list> = [ <linear-color-stop> [, <linear-color-hint>]? ]# , <linear-color-stop>
+  <linear-color-stop> = <color> && <color-stop-length>
+  <linear-color-hint> = <length-percentage>
+  <color-stop-length> = <length-percentage>{1,2}
+
+  <angular-color-stop-list> = [ <angular-color-stop> [, <angular-color-hint>]? ]# , <angular-color-stop>
+  <angular-color-stop> = <color> && <color-stop-angle>?
+  <angular-color-hint> = <angle-percentage>
+  <color-stop-angle> = <angle-percentage>{1,2}
+
+  <color-stop> = <color-stop-length> | <color-stop-angle>
+"""
