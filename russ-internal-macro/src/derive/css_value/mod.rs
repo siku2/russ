@@ -20,10 +20,7 @@ fn is_fields_single_unnamed(fields: &Fields) -> bool {
 }
 
 fn is_fields_unit(fields: &Fields) -> bool {
-    match fields {
-        Fields::Unit => true,
-        _ => false,
-    }
+    matches!(fields, Fields::Unit)
 }
 
 fn bind_idents_for_fields(fields: &Fields) -> syn::Result<(TokenStream, Vec<CssField>)> {
