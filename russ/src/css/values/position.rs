@@ -1,14 +1,14 @@
 use super::LengthPercentage;
-use russ_internal::{CSSValue, FromVariants};
+use russ_internal::{CssValue, FromVariants};
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, CSSValue)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, CssValue)]
 pub enum PositionHorizontalAnchor {
     #[keyword]
     Left,
     #[keyword]
     Right,
 }
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, FromVariants)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, FromVariants)]
 pub enum PositionHorizontal {
     Anchor(PositionHorizontalAnchor),
     #[value]
@@ -33,14 +33,14 @@ where
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, CSSValue)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, CssValue)]
 pub enum PositionVerticalAnchor {
     #[keyword]
     Top,
     #[keyword]
     Bottom,
 }
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, FromVariants)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, FromVariants)]
 pub enum PositionVertical {
     Anchor(PositionVerticalAnchor),
     #[value]
@@ -66,7 +66,7 @@ where
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/position_value
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
 #[value]
 pub struct Position {
     horizontal: Option<PositionHorizontal>,

@@ -2,8 +2,8 @@ mod attributes;
 mod css_field;
 
 use super::args;
-use attributes::CSSValueAttr;
-use css_field::CSSField;
+use attributes::CssValueAttr;
+use css_field::CssField;
 use heck::KebabCase;
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
@@ -26,7 +26,7 @@ fn is_fields_unit(fields: &Fields) -> bool {
     }
 }
 
-fn bind_idents_for_fields(fields: &Fields) -> syn::Result<(TokenStream, Vec<CSSField>)> {
+fn bind_idents_for_fields(fields: &Fields) -> syn::Result<(TokenStream, Vec<CssField>)> {
     Ok(match fields {
         Fields::Named(fields) => {
             let mut idents = Vec::new();
@@ -35,7 +35,7 @@ fn bind_idents_for_fields(fields: &Fields) -> syn::Result<(TokenStream, Vec<CSSF
             for field in &fields.named {
                 let ident = field.ident.clone().unwrap();
                 idents.push(ident.to_token_stream());
-                css_fields.push(CSSField::from_field(ident, field)?);
+                css_fields.push(CssField::from_field(ident, field)?);
             }
             (quote! { {#(#idents),*} }, css_fields)
         }
@@ -46,7 +46,7 @@ fn bind_idents_for_fields(fields: &Fields) -> syn::Result<(TokenStream, Vec<CSSF
             for (i, field) in fields.unnamed.iter().enumerate() {
                 let ident = Ident::new(&format!("v{}", i), field.span());
                 idents.push(ident.to_token_stream());
-                css_fields.push(CSSField::from_field(ident, field)?);
+                css_fields.push(CssField::from_field(ident, field)?);
             }
 
             (quote! { (#(#idents),*) }, css_fields)
@@ -56,14 +56,14 @@ fn bind_idents_for_fields(fields: &Fields) -> syn::Result<(TokenStream, Vec<CSSF
 }
 
 fn generate_write_for_fields_tokens(
-    attr: Option<CSSValueAttr>,
+    attr: Option<CssValueAttr>,
     fields: &Fields,
     container_ident: &Ident,
-    css_fields: &[CSSField],
+    css_fields: &[CssField],
 ) -> syn::Result<TokenStream> {
     if let Some(attr) = attr {
         Ok(match attr {
-            CSSValueAttr::Dimension(dimension) => {
+            CssValueAttr::Dimension(dimension) => {
                 if dimension.zero {
                     if !is_fields_unit(fields) {
                         return Err(syn::Error::new_spanned(
@@ -93,7 +93,7 @@ fn generate_write_for_fields_tokens(
                     }
                 }
             }
-            CSSValueAttr::Function(function) => {
+            CssValueAttr::Function(function) => {
                 // TODO apparently space should be the default separator, not comma
                 let separator_str = function
                     .separator
@@ -114,7 +114,7 @@ fn generate_write_for_fields_tokens(
                     Ok(())
                 }
             }
-            CSSValueAttr::Keyword(keyword) => {
+            CssValueAttr::Keyword(keyword) => {
                 if !is_fields_unit(fields) {
                     return Err(syn::Error::new_spanned(
                         fields,
@@ -129,7 +129,7 @@ fn generate_write_for_fields_tokens(
 
                 quote! { f.write_str(#value_str) }
             }
-            CSSValueAttr::Value(value) => {
+            CssValueAttr::Value(value) => {
                 let write_prefix = value.prefix.map(|value| quote! { f.write_str(#value)?; });
                 let write_suffix = value.suffix.map(|value| quote! { f.write_str(#value)?; });
 
@@ -205,7 +205,7 @@ fn generate_function_body(input: &DeriveInput) -> syn::Result<TokenStream> {
         }
         Data::Enum(data) => {
             // make sure there are no attributes on the enum itself.
-            args::expect_no_attrs::<CSSValueAttr, _>(&input.attrs)?;
+            args::expect_no_attrs::<CssValueAttr, _>(&input.attrs)?;
 
             let arms: Vec<_> = data
                 .variants
@@ -258,7 +258,7 @@ pub fn generate_write_value(mut input: DeriveInput) -> syn::Result<TokenStream> 
     let body = generate_function_body(&input)?;
     Ok(quote! {
         impl #impl_generics ::russ_internal::WriteValue for #type_ident #ty_generics #where_clause {
-            fn write_value(&self, f: &mut ::russ_internal::CSSWriter) -> ::russ_internal::WriteResult {
+            fn write_value(&self, f: &mut ::russ_internal::CssWriter) -> ::russ_internal::WriteResult {
                 #body
             }
         }

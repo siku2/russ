@@ -3,7 +3,7 @@
 pub mod props;
 pub mod values;
 pub use russ_internal::{
-    multiple, vec_into, CSSDeclaration, CSSValue, CSSWriter, WriteDeclaration, WriteResult,
+    multiple, vec_into, CssDeclaration, CssValue, CssWriter, WriteDeclaration, WriteResult,
     WriteValue,
 };
 use std::{iter, ops::Deref};
@@ -88,7 +88,7 @@ impl<T> WriteValue for Multiple<T>
 where
     T: WriteValue,
 {
-    fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
+    fn write_value(&self, f: &mut CssWriter) -> WriteResult {
         let (first, rest) = self.split_first();
         first.write_value(f)?;
         for v in rest {
@@ -168,7 +168,7 @@ impl<T> WriteValue for OneToFour<T>
 where
     T: WriteValue,
 {
-    fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
+    fn write_value(&self, f: &mut CssWriter) -> WriteResult {
         let Self(v0, next) = self;
         v0.write_value(f)?;
 

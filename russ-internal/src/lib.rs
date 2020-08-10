@@ -1,14 +1,14 @@
 mod macros;
 
-pub use russ_internal_macro::{CSSDeclaration, CSSValue, FromVariants, VariantConstructors};
+pub use russ_internal_macro::{CssDeclaration, CssValue, FromVariants, VariantConstructors};
 use std::io::{self, Write};
 
 pub type WriteResult<T = ()> = io::Result<T>;
 
-pub struct CSSWriter<'a> {
+pub struct CssWriter<'a> {
     buf: &'a mut (dyn Write + 'a),
 }
-impl<'a> CSSWriter<'a> {
+impl<'a> CssWriter<'a> {
     pub fn new(buf: &'a mut (dyn Write + 'a)) -> Self {
         Self { buf }
     }
@@ -21,7 +21,7 @@ impl<'a> CSSWriter<'a> {
         self.write_all(s.as_bytes())
     }
 }
-impl Write for CSSWriter<'_> {
+impl Write for CssWriter<'_> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.buf.write(buf)
     }
@@ -32,13 +32,13 @@ impl Write for CSSWriter<'_> {
 }
 
 pub trait WriteValue {
-    fn write_value(&self, f: &mut CSSWriter) -> WriteResult;
+    fn write_value(&self, f: &mut CssWriter) -> WriteResult;
 }
 
 pub trait WriteDeclaration: WriteValue {
-    fn write_property(&self, f: &mut CSSWriter) -> WriteResult;
+    fn write_property(&self, f: &mut CssWriter) -> WriteResult;
 
-    fn write_declaration(&self, f: &mut CSSWriter) -> WriteResult {
+    fn write_declaration(&self, f: &mut CssWriter) -> WriteResult {
         self.write_property(f)?;
         f.write_char(':')?;
         self.write_value(f)
@@ -49,7 +49,7 @@ impl<T> WriteValue for Box<T>
 where
     T: WriteValue,
 {
-    fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
+    fn write_value(&self, f: &mut CssWriter) -> WriteResult {
         self.as_ref().write_value(f)
     }
 }

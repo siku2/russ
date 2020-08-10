@@ -1,13 +1,13 @@
 use super::{
     Angle, Flex, Frequency, Length, Number, NumberValueType, Percentage, Resolution, Time,
 };
-use russ_internal::{CSSValue, CSSWriter, FromVariants, WriteResult, WriteValue};
+use russ_internal::{CssValue, CssWriter, FromVariants, WriteResult, WriteValue};
 
 // TODO perhaps use Calc<T> where T is a dimension (Angle, Length) so that CalcValue only allows that particular dimension
 //      Need to verify if this is actually valid though.
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/calc
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
 #[function]
 pub struct Calc(CalcSum);
 impl Calc {
@@ -40,7 +40,7 @@ impl Calc {
     }
 }
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
 pub enum CalcSumPart {
     #[value(prefix = " + ")]
     Add(CalcProduct),
@@ -60,7 +60,7 @@ impl CalcSum {
     }
 }
 impl WriteValue for CalcSum {
-    fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
+    fn write_value(&self, f: &mut CssWriter) -> WriteResult {
         self.0.write_value(f)?;
         for part in &self.1 {
             part.write_value(f)?;
@@ -77,7 +77,7 @@ where
     }
 }
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
 pub enum CalcProductPart {
     #[value(prefix = " * ")]
     Mul(CalcValue),
@@ -97,7 +97,7 @@ impl CalcProduct {
     }
 }
 impl WriteValue for CalcProduct {
-    fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
+    fn write_value(&self, f: &mut CssWriter) -> WriteResult {
         self.0.write_value(f)?;
         for part in &self.1 {
             part.write_value(f)?;
@@ -114,7 +114,7 @@ where
     }
 }
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, FromVariants)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, FromVariants)]
 pub enum CalcValue {
     Number(Number),
     #[value(prefix = "(", suffix = ")")]

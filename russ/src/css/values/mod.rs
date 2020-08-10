@@ -13,11 +13,11 @@ pub use dimensions::*;
 pub use image::*;
 pub use position::*;
 use russ_internal::{
-    CSSValue, CSSWriter, FromVariants, VariantConstructors, WriteResult, WriteValue,
+    CssValue, CssWriter, FromVariants, VariantConstructors, WriteResult, WriteValue,
 };
 use std::io::Write;
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, FromVariants)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, FromVariants)]
 pub enum BasicShapeRadius {
     #[from_variant(into)]
     LengthPercentage(Length),
@@ -31,7 +31,7 @@ pub enum BasicShapeRadius {
 // TODO BasicShape could use some refactoring
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/basic-shape
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
 pub enum BasicShape {
     #[function(separator = " ")]
     Inset(
@@ -57,11 +57,11 @@ pub enum BasicShape {
     ),
     // TODO fill-rule
     #[function]
-    Path(CSSString),
+    Path(CssString),
 }
 impl BasicShape {
     fn write_ellipse_shape(
-        f: &mut CSSWriter,
+        f: &mut CssWriter,
         (rx, ry): &(BasicShapeRadius, BasicShapeRadius),
     ) -> WriteResult {
         rx.write_value(f)?;
@@ -71,10 +71,10 @@ impl BasicShape {
     }
 
     fn write_polygon_vertices(
-        f: &mut CSSWriter,
+        f: &mut CssWriter,
         vertices: &[(LengthPercentage, LengthPercentage)],
     ) -> WriteResult {
-        let write_vertex = |f: &mut CSSWriter, (x, y): &(LengthPercentage, LengthPercentage)| {
+        let write_vertex = |f: &mut CssWriter, (x, y): &(LengthPercentage, LengthPercentage)| {
             x.write_value(f)?;
             f.write_str(" ")?;
             y.write_value(f)
@@ -92,7 +92,7 @@ impl BasicShape {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/blend-mode
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, CSSValue)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, CssValue)]
 pub enum BlendMode {
     #[keyword]
     Normal,
@@ -131,7 +131,7 @@ pub enum BlendMode {
 pub type HexValueType = u32;
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
 pub enum Color {
     #[value(prefix = "#", write_fn = "Self::write_hex")]
     Hex(HexValueType),
@@ -212,14 +212,14 @@ impl Color {
     }
 
     #[allow(clippy::trivially_copy_pass_by_ref)]
-    fn write_hex(f: &mut CSSWriter, hex: &HexValueType) -> WriteResult {
+    fn write_hex(f: &mut CssWriter, hex: &HexValueType) -> WriteResult {
         write!(f, "{:06X}", hex)
     }
 }
 
 // https://drafts.csswg.org/css-backgrounds-3/#typedef-box
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, CSSValue, VariantConstructors)]
-pub enum CSSBox {
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, CssValue, VariantConstructors)]
+pub enum CssBox {
     #[keyword]
     BorderBox,
     #[keyword]
@@ -229,7 +229,7 @@ pub enum CSSBox {
 }
 
 // https://drafts.csswg.org/css-easing/#typedef-easing-function
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, VariantConstructors)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, VariantConstructors)]
 pub enum EasingFunction {
     #[keyword]
     Ease,
@@ -245,7 +245,7 @@ pub enum EasingFunction {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/filter-function
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, VariantConstructors)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, VariantConstructors)]
 pub enum FilterFunction {
     #[function]
     Blur(Length),
@@ -275,16 +275,16 @@ pub enum FilterFunction {
 }
 
 // https://drafts.csswg.org/css-shapes-1/#typedef-shape-box
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, FromVariants)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, FromVariants)]
 pub enum ShapeBox {
-    Box(CSSBox),
+    Box(CssBox),
 
     #[keyword]
     MarginBox,
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function
-// #[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
+// #[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
 pub enum TransformFunction {
     // TODO
     Matrix(),

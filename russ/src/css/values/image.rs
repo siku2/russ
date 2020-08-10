@@ -1,11 +1,11 @@
 use super::{
-    Angle, AnglePercentage, CSSString, Color, LengthPercentage, Percentage, Position, Resolution,
+    Angle, AnglePercentage, CssString, Color, LengthPercentage, Percentage, Position, Resolution,
     Url,
 };
 use crate::css::Multiple;
-use russ_internal::{CSSValue, FromVariants};
+use russ_internal::{CssValue, FromVariants};
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
 #[value]
 pub struct GradientColorStop<T>(Color, Option<T>, Option<T>);
 impl<T> GradientColorStop<T> {
@@ -45,7 +45,7 @@ where
     }
 }
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
 #[value(separator = ",")]
 pub struct GradientColorStopHint<T>(GradientColorStop<T>, Option<T>);
 impl<T> GradientColorStopHint<T> {
@@ -70,7 +70,7 @@ where
     }
 }
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
 #[value(separator = ",")]
 pub struct GradientColorStopList<T>(pub Vec<GradientColorStopHint<T>>, pub GradientColorStop<T>);
 impl<T> GradientColorStopList<T> {
@@ -95,7 +95,7 @@ pub type AngularColorStop = GradientColorStop<AnglePercentage>;
 pub type AngularColorStopHint = GradientColorStopHint<AnglePercentage>;
 pub type AngularColorStopList = GradientColorStopList<AnglePercentage>;
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
 pub enum GradientShapeSize {
     #[keyword]
     ClosestSide,
@@ -127,7 +127,7 @@ where
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, CSSValue)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, CssValue)]
 pub enum GradientEndingShape {
     #[keyword]
     Circle,
@@ -135,7 +135,7 @@ pub enum GradientEndingShape {
     Ellipse,
 }
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
 #[value]
 // at least one of the three MUST be specified
 pub struct GradientRadialDefinition {
@@ -162,7 +162,7 @@ impl GradientRadialDefinition {
     }
 }
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
 #[value]
 // at least one value must not be None
 pub struct GradientConicDefinition {
@@ -182,7 +182,7 @@ impl GradientConicDefinition {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/gradient
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
 pub enum Gradient {
     /// side-or-corner (to left) isn't supported. Use angles instead.
     #[function(name = "linear-gradient")]
@@ -257,7 +257,7 @@ impl Gradient {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, CSSValue)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, CssValue)]
 pub enum ImageTags {
     #[keyword]
     Ltr,
@@ -265,14 +265,14 @@ pub enum ImageTags {
     Rtl,
 }
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, FromVariants)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, FromVariants)]
 pub enum ImageSrc {
     Url(Url),
     #[from_variant(into)]
-    Str(CSSString),
+    Str(CssString),
 }
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
 #[value]
 pub struct ImageSetOption(pub ImageSrc, pub Resolution);
 impl<Src> From<(Src, Resolution)> for ImageSetOption
@@ -284,7 +284,7 @@ where
     }
 }
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, FromVariants)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, FromVariants)]
 pub enum CrossFadeImageColor {
     Image(Box<Image>),
     Color(Color),
@@ -295,7 +295,7 @@ impl From<Image> for CrossFadeImageColor {
     }
 }
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
 #[value]
 pub struct CrossFadeImage(pub Option<Percentage>, pub CrossFadeImageColor);
 impl<Img> From<(Option<Percentage>, Img)> for CrossFadeImage
@@ -316,7 +316,7 @@ where
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/image
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, FromVariants)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, FromVariants)]
 pub enum Image {
     Url(Url),
     Gradient(Box<Gradient>),

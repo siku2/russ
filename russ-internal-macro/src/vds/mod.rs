@@ -5,7 +5,7 @@ use syn::{
     parse::{Parse, ParseStream},
     parse_quote, Ident, LitStr, Token,
 };
-pub use value::CSSIdent;
+pub use value::CssIdent;
 use value::{PropertyReference, Reference};
 
 mod combined;

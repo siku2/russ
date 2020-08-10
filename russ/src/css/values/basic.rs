@@ -1,5 +1,5 @@
 use super::Calc;
-use russ_internal::{CSSValue, CSSWriter, FromVariants, WriteResult, WriteValue};
+use russ_internal::{CssValue, CssWriter, FromVariants, WriteResult, WriteValue};
 use std::{
     cmp::{Ordering, PartialEq, PartialOrd},
     hash::{Hash, Hasher},
@@ -10,20 +10,20 @@ use std::{
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct CustomIdent(String);
 impl WriteValue for CustomIdent {
-    fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
+    fn write_value(&self, f: &mut CssWriter) -> WriteResult {
         f.write_str(&self.0)
     }
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/string
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct CSSString(String);
-impl WriteValue for CSSString {
-    fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
+pub struct CssString(String);
+impl WriteValue for CssString {
+    fn write_value(&self, f: &mut CssWriter) -> WriteResult {
         write!(f, "\"{}\"", self.0.replace("\"", "\\\""))
     }
 }
-impl<T> From<T> for CSSString
+impl<T> From<T> for CssString
 where
     T: Into<String>,
 {
@@ -42,7 +42,7 @@ pub enum Integer {
     Calc(Box<Calc>),
 }
 impl WriteValue for Integer {
-    fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
+    fn write_value(&self, f: &mut CssWriter) -> WriteResult {
         match self {
             Self::Value(v) => write!(f, "{}", v),
             Self::Calc(calc) => calc.write_value(f),
@@ -78,7 +78,7 @@ pub enum Number {
     Calc(Box<Calc>),
 }
 impl WriteValue for Number {
-    fn write_value(&self, f: &mut CSSWriter) -> WriteResult {
+    fn write_value(&self, f: &mut CssWriter) -> WriteResult {
         match self {
             Self::Value(v) => write!(f, "{}", v),
             Self::Calc(calc) => calc.write_value(f),
@@ -123,7 +123,7 @@ impl From<Calc> for Number {
     }
 }
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, FromVariants)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, FromVariants)]
 pub enum NumberPercentage {
     #[from_variant(into)]
     Number(Number),
@@ -131,7 +131,7 @@ pub enum NumberPercentage {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/percentage
-#[derive(Clone, Debug, Default, Eq, Hash, PartialEq, PartialOrd, CSSValue)]
+#[derive(Clone, Debug, Default, Eq, Hash, PartialEq, PartialOrd, CssValue)]
 #[dimension(unit = "%")]
 pub struct Percentage(pub Number);
 impl<T> From<T> for Percentage
@@ -145,7 +145,7 @@ where
 
 // TODO manual eq, ord implementation so that 16/4 == 4/1
 // https://developer.mozilla.org/en-US/docs/Web/CSS/ratio
-#[derive(Clone, Debug, Eq, Hash, PartialEq, PartialOrd, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, PartialOrd, CssValue)]
 #[value(separator = "/")]
 pub struct Ratio(pub Integer, pub Integer);
 impl<W, H> From<(W, H)> for Ratio
@@ -159,12 +159,12 @@ where
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/url
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, CssValue)]
 #[function]
-pub struct Url(CSSString);
+pub struct Url(CssString);
 impl<T> From<T> for Url
 where
-    T: Into<CSSString>,
+    T: Into<CssString>,
 {
     fn from(v: T) -> Self {
         Self(v.into())

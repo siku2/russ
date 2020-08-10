@@ -1,4 +1,7 @@
-use super::numeric::{Angle, Number, Percentage};
+use super::{
+    numeric::{Angle, Number, Percentage},
+    textual::{CssIdent, CssString},
+};
 use russ_internal_macro::vds;
 
 vds! {

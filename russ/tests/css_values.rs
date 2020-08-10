@@ -1,9 +1,9 @@
-use russ::css::{multiple, values::*, CSSWriter, WriteValue};
+use russ::css::{multiple, values::*, CssWriter, WriteValue};
 
 fn render(value: impl WriteValue) -> String {
     let mut v = Vec::new();
     value
-        .write_value(&mut CSSWriter::new(&mut v))
+        .write_value(&mut CssWriter::new(&mut v))
         .expect("failed to write value");
     String::from_utf8(v).expect("invalid utf8 returned")
 }
@@ -258,8 +258,8 @@ fn ratio() {
 
 #[test]
 fn string() {
-    assert_eq!(render(CSSString::from("hello world")), "\"hello world\"");
-    assert_eq!(render(CSSString::from(r#" "'" "#)), r#"" \"'\" ""#);
+    assert_eq!(render(CssString::from("hello world")), "\"hello world\"");
+    assert_eq!(render(CssString::from(r#" "'" "#)), r#"" \"'\" ""#);
 }
 
 #[test]

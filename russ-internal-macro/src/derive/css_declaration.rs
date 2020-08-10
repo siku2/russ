@@ -9,7 +9,7 @@ pub fn generate_write_declaration(input: DeriveInput) -> syn::Result<TokenStream
 
     Ok(quote! {
         impl ::russ_internal::WriteDeclaration for #name_ident {
-            fn write_property(&self, f: &mut ::russ_internal::CSSWriter) -> ::russ_internal::WriteResult {
+            fn write_property(&self, f: &mut ::russ_internal::CssWriter) -> ::russ_internal::WriteResult {
                 f.write_str(#property_name_str)
             }
         }

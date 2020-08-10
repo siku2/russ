@@ -1,5 +1,5 @@
 use super::bindings;
-use russ_internal::{CSSWriter, WriteDeclaration, WriteResult};
+use russ_internal::{CssWriter, WriteDeclaration, WriteResult};
 use std::{
     borrow::Cow,
     collections::{hash_map::DefaultHasher, HashMap},
@@ -11,7 +11,7 @@ use std::{
 trait DeclarationInner: WriteDeclaration {
     fn box_clone(&self) -> Box<dyn DeclarationInner>;
     fn debug_fmt(&self, f: &mut Formatter) -> fmt::Result;
-    fn generate_key(&self) -> CSSKey;
+    fn generate_key(&self) -> CssKey;
 }
 impl Clone for Box<dyn DeclarationInner> {
     fn clone(&self) -> Self {
@@ -41,15 +41,15 @@ where
         self.fmt(f)
     }
 
-    fn generate_key(&self) -> CSSKey {
-        CSSKey::new_hash(self)
+    fn generate_key(&self) -> CssKey {
+        CssKey::new_hash(self)
     }
 }
 
 #[derive(Clone, Debug, Hash)]
 pub struct Declaration(Box<dyn DeclarationInner>);
 impl Declaration {
-    pub fn write_declaration(&self, f: &mut CSSWriter) -> WriteResult {
+    pub fn write_declaration(&self, f: &mut CssWriter) -> WriteResult {
         self.0.write_declaration(f)
     }
 }
@@ -69,7 +69,7 @@ impl DeclarationBlock {
         Self(declarations.into_iter().map(Into::into).collect())
     }
 
-    pub fn write_block(&self, f: &mut CSSWriter) -> WriteResult {
+    pub fn write_block(&self, f: &mut CssWriter) -> WriteResult {
         f.write_char('{')?;
         for decl in &self.0 {
             decl.write_declaration(f)?;
@@ -78,7 +78,7 @@ impl DeclarationBlock {
         f.write_char('}')
     }
 
-    pub fn write_block_with_selector(&self, f: &mut CSSWriter, selector: &str) -> WriteResult {
+    pub fn write_block_with_selector(&self, f: &mut CssWriter, selector: &str) -> WriteResult {
         f.write_str(selector)?;
         self.write_block(f)
     }
@@ -95,15 +95,15 @@ impl RuleSet {
         }
     }
 
-    pub fn write_rule_set(&self, f: &mut CSSWriter, class_id: impl Display) -> WriteResult {
+    pub fn write_rule_set(&self, f: &mut CssWriter, class_id: impl Display) -> WriteResult {
         self.block
             .write_block_with_selector(f, &format!(".{}", class_id))
     }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct CSSKey(u64);
-impl CSSKey {
+pub struct CssKey(u64);
+impl CssKey {
     pub fn new_hash<T: Hash>(v: T) -> Self {
         let mut h = DefaultHasher::new();
         v.hash(&mut h);
@@ -126,11 +126,11 @@ impl Styles {
         }
     }
 
-    pub fn generate_key(&self) -> CSSKey {
-        CSSKey::new_hash(&self.rule_sets)
+    pub fn generate_key(&self) -> CssKey {
+        CssKey::new_hash(&self.rule_sets)
     }
 
-    pub fn write_css(&self, f: &mut CSSWriter, prefix: impl Display) -> WriteResult {
+    pub fn write_css(&self, f: &mut CssWriter, prefix: impl Display) -> WriteResult {
         for (i, rule_set) in self.rule_sets.iter().enumerate() {
             rule_set.write_rule_set(f, format!("{}-{}", prefix, i))?;
         }
@@ -170,24 +170,24 @@ pub type StyleSheetRef = Rc<StyleSheet>;
 
 #[derive(Clone, Debug, Default)]
 pub struct StyleManager {
-    sheets: HashMap<CSSKey, Weak<StyleSheet>>,
+    sheets: HashMap<CssKey, Weak<StyleSheet>>,
 }
 impl StyleManager {
-    fn get(&self, key: CSSKey) -> Option<StyleSheetRef> {
+    fn get(&self, key: CssKey) -> Option<StyleSheetRef> {
         self.sheets.get(&key).and_then(Weak::upgrade)
     }
 
-    fn track_sheet(&mut self, key: CSSKey, sheet_ref: StyleSheet) -> StyleSheetRef {
+    fn track_sheet(&mut self, key: CssKey, sheet_ref: StyleSheet) -> StyleSheetRef {
         let shared_ref = Rc::new(sheet_ref);
         self.sheets.insert(key, Rc::downgrade(&shared_ref));
         shared_ref
     }
 
-    fn add_styles_with_key(&mut self, key: CSSKey, styles: &Styles) -> StyleSheetRef {
+    fn add_styles_with_key(&mut self, key: CssKey, styles: &Styles) -> StyleSheetRef {
         let unique_id = key.unique_id();
         let mut body_buf = Vec::new();
         styles
-            .write_css(&mut CSSWriter::new(&mut body_buf), &unique_id)
+            .write_css(&mut CssWriter::new(&mut body_buf), &unique_id)
             .expect("failed to render CSS");
         // SAFETY: CSSWriter should never produce invalid UTF8.
         //  On the off chance that it does, it will be handled by `TextDecoder` in JavaScript and generate a panic.
@@ -197,7 +197,7 @@ impl StyleManager {
         self.track_sheet(key, style_sheet)
     }
 
-    pub fn track_styles_with_key(&mut self, key: CSSKey, styles: &Styles) -> StyleSheetRef {
+    pub fn track_styles_with_key(&mut self, key: CssKey, styles: &Styles) -> StyleSheetRef {
         self.get(key)
             .unwrap_or_else(|| self.add_styles_with_key(key, styles))
     }

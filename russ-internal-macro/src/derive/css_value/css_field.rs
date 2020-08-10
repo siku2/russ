@@ -82,13 +82,13 @@ fn type_is_eq_to(ty: &Type, name: &str) -> bool {
 
 // TODO empty vectors can cause problems
 
-pub struct CSSField {
+pub struct CssField {
     pub bind_ident: Ident,
     pub attr: Option<FieldAttr>,
     is_option: bool,
     is_iter: bool,
 }
-impl CSSField {
+impl CssField {
     pub fn from_field(bind_ident: Ident, field: &Field) -> syn::Result<Self> {
         let is_option;
         let is_iter;
@@ -231,7 +231,7 @@ impl CSSField {
 }
 
 /// Assumes `io::Write` is in scope.
-pub fn gen_join_fields(fields: &[CSSField], separator: &str) -> syn::Result<TokenStream> {
+pub fn gen_join_fields(fields: &[CssField], separator: &str) -> syn::Result<TokenStream> {
     gen_join_fields_with_write_separator(
         fields,
         quote! {
@@ -242,7 +242,7 @@ pub fn gen_join_fields(fields: &[CSSField], separator: &str) -> syn::Result<Toke
 
 /// Assumes `io::Write` is in scope.
 pub fn gen_join_fields_with_write_separator(
-    fields: &[CSSField],
+    fields: &[CssField],
     write_separator: impl ToTokens,
 ) -> syn::Result<TokenStream> {
     if fields.iter().all(|field| !field.is_option) {

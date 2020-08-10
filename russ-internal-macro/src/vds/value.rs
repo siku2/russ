@@ -23,8 +23,8 @@ use syn::{
 };
 
 #[derive(Clone)]
-pub struct CSSIdent(Punctuated<Ident, Token![-]>);
-impl CSSIdent {
+pub struct CssIdent(Punctuated<Ident, Token![-]>);
+impl CssIdent {
     pub fn value(&self) -> String {
         self.0.pairs().fold(String::new(), |mut s, pair| {
             s.push_str(&pair.value().to_string());
@@ -42,7 +42,7 @@ impl CSSIdent {
 
     pub fn gen_parse_any_ident(get_parse_stream: &Expr) -> Expr {
         helpers::gen_parse_type(
-            &parse_quote! {  ::russ_internal_macro::vds::CSSIdent },
+            &parse_quote! {  ::russ_internal_macro::vds::CssIdent },
             get_parse_stream,
         )
     }
@@ -62,14 +62,14 @@ impl CSSIdent {
         }
     }
 }
-impl Debug for CSSIdent {
+impl Debug for CssIdent {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        f.debug_struct("CSSIdent")
+        f.debug_struct("CssIdent")
             .field("value", &self.value())
             .finish()
     }
 }
-impl Parse for CSSIdent {
+impl Parse for CssIdent {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         Ok(Self(Punctuated::parse_separated_nonempty_with(
             input,
@@ -77,13 +77,13 @@ impl Parse for CSSIdent {
         )?))
     }
 }
-impl Spanned for CSSIdent {
+impl Spanned for CssIdent {
     fn span(&self) -> Span {
         self.0.span()
     }
 }
 
-pub struct Keyword(pub CSSIdent);
+pub struct Keyword(pub CssIdent);
 impl GenerateTypeInfo for Keyword {
     fn gen_type_info(&self, _ctx: GenerateTypeContext) -> syn::Result<TypeInfo> {
         let name = self.0.ident_camel_case()?;
@@ -252,7 +252,7 @@ impl Parse for ClosedRange {
 }
 
 pub struct InnerReference {
-    pub ident: CSSIdent,
+    pub ident: CssIdent,
     pub range: Option<ClosedRange>,
 }
 impl Parse for InnerReference {
@@ -270,7 +270,7 @@ impl Parse for InnerReference {
 
 pub struct Reference(pub AngleBracketed<InnerReference>);
 impl Reference {
-    pub const fn ref_ident_raw(&self) -> &CSSIdent {
+    pub const fn ref_ident_raw(&self) -> &CssIdent {
         &self.0.content.ident
     }
 

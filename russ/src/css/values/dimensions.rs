@@ -1,8 +1,8 @@
 use super::{Number, Percentage};
-use russ_internal::{CSSValue, FromVariants, VariantConstructors};
+use russ_internal::{CssValue, FromVariants, VariantConstructors};
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/angle
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, VariantConstructors)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, VariantConstructors)]
 pub enum Angle {
     #[dimension]
     Deg(Number),
@@ -18,7 +18,7 @@ pub enum Angle {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/angle-percentage
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, FromVariants)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, FromVariants)]
 pub enum AnglePercentage {
     #[from_variant(into)]
     Angle(Angle),
@@ -26,7 +26,7 @@ pub enum AnglePercentage {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/flex_value
-#[derive(Clone, Debug, Eq, Hash, PartialEq, PartialOrd, CSSValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, PartialOrd, CssValue)]
 #[dimension(unit = "fr")]
 pub struct Flex(pub Number);
 impl<T> From<T> for Flex
@@ -39,7 +39,7 @@ where
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/frequency
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, VariantConstructors)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, VariantConstructors)]
 pub enum Frequency {
     #[dimension(unit = "Hz")]
     Hz(Number),
@@ -48,7 +48,7 @@ pub enum Frequency {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/frequency-percentage
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, FromVariants)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, FromVariants)]
 pub enum FrequencyPercentage {
     #[from_variant(into)]
     Frequency(Frequency),
@@ -56,7 +56,7 @@ pub enum FrequencyPercentage {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/length
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, VariantConstructors)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, VariantConstructors)]
 pub enum Length {
     #[dimension]
     Cap(Number),
@@ -109,7 +109,7 @@ pub enum Length {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/length-percentage
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, FromVariants)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, FromVariants)]
 pub enum LengthPercentage {
     #[from_variant(into)]
     Length(Length),
@@ -117,7 +117,7 @@ pub enum LengthPercentage {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/resolution
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, VariantConstructors)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, VariantConstructors)]
 pub enum Resolution {
     #[dimension]
     Dpi(Number),
@@ -133,7 +133,7 @@ impl Resolution {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/time
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, VariantConstructors)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, VariantConstructors)]
 pub enum Time {
     #[dimension]
     S(Number),
@@ -142,7 +142,7 @@ pub enum Time {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/time-percentage
-#[derive(Clone, Debug, Eq, Hash, PartialEq, CSSValue, FromVariants)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, FromVariants)]
 pub enum TimePercentage {
     #[from_variant(into)]
     Time(Time),

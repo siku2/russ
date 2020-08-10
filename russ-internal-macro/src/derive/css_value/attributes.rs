@@ -100,13 +100,13 @@ impl ToTokens for ValueAttr {
     }
 }
 
-pub enum CSSValueAttr {
+pub enum CssValueAttr {
     Dimension(DimensionAttr),
     Function(FunctionAttr),
     Keyword(KeywordAttr),
     Value(ValueAttr),
 }
-impl ParseAttr for CSSValueAttr {
+impl ParseAttr for CssValueAttr {
     fn parse_attr(attr: &Attribute) -> Option<syn::Result<Self>> {
         Some({
             if let Some(attr) = DimensionAttr::parse_attr(attr) {
@@ -124,7 +124,7 @@ impl ParseAttr for CSSValueAttr {
     }
 }
 
-impl ToTokens for CSSValueAttr {
+impl ToTokens for CssValueAttr {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         match &self {
             Self::Dimension(attr) => attr.to_tokens(tokens),

@@ -10,13 +10,13 @@ fn to_token_stream(res: syn::Result<proc_macro2::TokenStream>) -> proc_macro::To
     })
 }
 
-#[proc_macro_derive(CSSValue, attributes(dimension, function, keyword, value, field))]
+#[proc_macro_derive(CssValue, attributes(dimension, function, keyword, value, field))]
 pub fn derive_value(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     to_token_stream(derive::generate_write_value(input))
 }
 
-#[proc_macro_derive(CSSDeclaration)]
+#[proc_macro_derive(CssDeclaration)]
 pub fn derive_declaration(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     to_token_stream(derive::generate_write_declaration(input))
