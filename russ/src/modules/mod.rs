@@ -1,7 +1,4 @@
-pub use russ_internal::{
-    multiple, vec_into, CssDeclaration, CssValue, CssWriter, WriteDeclaration, WriteResult,
-    WriteValue,
-};
+use russ_internal::{CssWriter, WriteResult, WriteValue};
 use std::{iter, ops::Deref};
 
 // mod backgrounds;
