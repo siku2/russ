@@ -69,17 +69,20 @@ fn generate_from_variant(
     }
 
     let from_types = quote! { (#(#types),*) };
-    let mut impl_types: Vec<_> = generics
+    let mut impl_types = generics
         .params
         .iter()
         .map(|param| param.to_token_stream())
-        .collect();
+        .collect::<Vec<_>>();
     if gen_into {
         impl_types.extend(types);
     }
 
+    let type_generic_params = &generics.params;
+    let where_clause = &generics.where_clause;
+
     Ok(quote! {
-        impl<#(#impl_types),*> ::std::convert::From<#from_types> for #type_ident#generics {
+        impl<#(#impl_types),*> ::std::convert::From<#from_types> for #type_ident<#type_generic_params> #where_clause {
             fn from((#(#bind_idents),*): #from_types) -> Self {
                 Self::#variant_ident(#(#use_idents),*)
             }

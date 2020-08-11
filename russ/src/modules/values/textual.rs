@@ -7,6 +7,7 @@ use std::{
 };
 
 // TODO: this needs to be supported by every prop
+// TODO: this should be contained in the cascade (https://www.w3.org/TR/css-cascade-3/) module
 /// <https://www.w3.org/TR/css-values-3/#common-keywords>
 pub enum Keyword {
     Initial,
@@ -14,6 +15,7 @@ pub enum Keyword {
     Unset,
 }
 
+// TODO verify string contents
 /// <https://www.w3.org/TR/css-values-3/#custom-idents>
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct CustomIdent(String);
@@ -41,16 +43,55 @@ where
     }
 }
 
+// TODO verify url tokens
 /// <https://www.w3.org/TR/css-values-3/#urls>
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, CssValue)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
 #[function]
-pub struct Url(CssString);
+pub struct Url(
+    CssString,
+    // TODO allow VDS shortcuts like "*" instead of this
+    #[field(iter, iter_separator = " ")] Vec<UrlModifier>,
+);
 
 impl<T> From<T> for Url
 where
     T: Into<CssString>,
 {
     fn from(v: T) -> Self {
-        Self(v.into())
+        Self(v.into(), Vec::new())
+    }
+}
+
+// TODO modifiers can be <ident> or a function
+#[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
+pub struct UrlModifier(CssString);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use russ_internal::render_to_string;
+
+    #[test]
+    fn string() -> WriteResult {
+        assert_eq!(
+            render_to_string(CssString::from("hello world"))?,
+            "\"hello world\""
+        );
+        assert_eq!(
+            render_to_string(CssString::from(r#" "'" "#))?,
+            r#"" \"'\" ""#
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn url() -> WriteResult {
+        assert_eq!(
+            render_to_string(Url::from("http://www.example.com/pinkish.gif"))?,
+            r#"url("http://www.example.com/pinkish.gif")"#
+        );
+
+        Ok(())
     }
 }

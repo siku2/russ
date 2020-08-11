@@ -204,17 +204,6 @@ fn image() {
 }
 
 #[test]
-fn integer() {
-    assert_eq!(render(Integer::from(5)), "5");
-}
-
-#[test]
-fn number() {
-    assert_eq!(render(Number::from(5)), "5");
-    assert_eq!(render(Number::from(5.5)), "5.5");
-}
-
-#[test]
 fn position() {
     assert_eq!(render(Position::center()), "center");
     assert_eq!(render(Position::x(PositionHorizontalAnchor::Left)), "left");
@@ -254,12 +243,6 @@ fn position() {
 #[test]
 fn ratio() {
     assert_eq!(render(Ratio(16.into(), 9.into())), "16/9");
-}
-
-#[test]
-fn string() {
-    assert_eq!(render(CssString::from("hello world")), "\"hello world\"");
-    assert_eq!(render(CssString::from(r#" "'" "#)), r#"" \"'\" ""#);
 }
 
 #[test]

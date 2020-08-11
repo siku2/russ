@@ -35,6 +35,21 @@ pub trait WriteValue {
     fn write_value(&self, f: &mut CssWriter) -> WriteResult;
 }
 
+pub fn render_to_vec(value: impl WriteValue) -> WriteResult<Vec<u8>> {
+    let mut v = Vec::new();
+    value.write_value(&mut CssWriter::new(&mut v))?;
+    Ok(v)
+}
+
+pub fn render_to_string(value: impl WriteValue) -> WriteResult<String> {
+    String::from_utf8(render_to_vec(value)?).map_err(|_| io::ErrorKind::InvalidData.into())
+}
+
+pub unsafe fn render_to_string_unchecked(value: impl WriteValue) -> WriteResult<String> {
+    let v = render_to_vec(value)?;
+    Ok(String::from_utf8_unchecked(v))
+}
+
 pub trait WriteDeclaration: WriteValue {
     fn write_property(&self, f: &mut CssWriter) -> WriteResult;
 
