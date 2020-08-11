@@ -116,11 +116,24 @@ where
 
 macro_rules! value_percentage {
     ($type_name:ident, $field_name:ident, $t:ty) => {
-        #[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue, FromVariants)]
+        #[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
         pub enum $type_name {
-            #[from_variant(into)]
             $field_name($t),
             Percentage(Percentage),
+        }
+
+        impl<T> From<T> for $type_name
+        where
+            T: Into<$t>,
+        {
+            fn from(v: T) -> Self {
+                Self::$field_name(v.into())
+            }
+        }
+        impl From<Percentage> for $type_name {
+            fn from(v: Percentage) -> Self {
+                Self::Percentage(v)
+            }
         }
     };
     ($type_name:ident, $name:ident) => {
@@ -151,7 +164,7 @@ mod tests {
     fn number() -> WriteResult {
         assert_eq!(render_to_string(Number::from(5))?, "5");
         assert_eq!(render_to_string(Number::from(5.5))?, "5.5");
-        assert_eq!(render_to_string(Number::from(5e10))?, "5e10");
+        assert_eq!(render_to_string(Number::from(-5e10))?, "-50000000000");
 
         Ok(())
     }

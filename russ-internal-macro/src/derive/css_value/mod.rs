@@ -95,7 +95,7 @@ fn generate_write_for_fields_tokens(
                 let separator_str = function
                     .separator
                     .as_ref()
-                    .map_or_else(|| ",".to_string(), LitStr::value);
+                    .map_or_else(|| " ".to_string(), LitStr::value);
                 let write_arguments = css_field::gen_join_fields(css_fields, &separator_str)?;
                 let fn_name_str = function.name.as_ref().map_or_else(
                     || container_ident.to_string().to_kebab_case(),

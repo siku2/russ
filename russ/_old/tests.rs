@@ -8,21 +8,6 @@ fn render(value: impl WriteValue) -> String {
     String::from_utf8(v).expect("invalid utf8 returned")
 }
 
-#[test]
-fn calc() {
-    assert_eq!(
-        render(Calc::bin_sub(Percentage::from(100), Length::px(80))),
-        "calc(100% - 80px)"
-    );
-    assert_eq!(
-        render(Calc::bin_div(Calc::bin_div(Length::px(100), 2), 2)),
-        "calc((100px / 2) / 2)"
-    );
-    assert_eq!(
-        render(Color::rgba(Calc::bin_sub(255, 5), 0, 153, 1)),
-        "rgb(calc(255 - 5),0,153,1)"
-    );
-}
 
 #[test]
 fn color() {

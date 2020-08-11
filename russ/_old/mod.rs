@@ -27,17 +27,17 @@ pub enum BasicShapeRadius {
 // https://developer.mozilla.org/en-US/docs/Web/CSS/basic-shape
 #[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
 pub enum BasicShape {
-    #[function(separator = " ")]
+    #[function]
     Inset(
         OneToFour<LengthPercentage>,
         // TODO Optional<borderradius>
     ),
-    #[function(separator = " ")]
+    #[function]
     Circle(
         Option<BasicShapeRadius>,
         #[field(option, prefix = "at ")] Option<Position>,
     ),
-    #[function(separator = " ")]
+    #[function]
     Ellipse(
         #[field(option, write_fn = "Self::write_ellipse_shape")]
         Option<(BasicShapeRadius, BasicShapeRadius)>,
@@ -247,7 +247,7 @@ pub enum FilterFunction {
     Brightness(NumberPercentage),
     #[function]
     Contrast(NumberPercentage),
-    #[function(separator = " ")]
+    #[function]
     DropShadow {
         offset_x: Length,
         offset_y: Length,

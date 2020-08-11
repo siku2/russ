@@ -1,3 +1,4 @@
+use crate::modules::Multiple;
 /// <https://www.w3.org/TR/css-values-3/#textual-values>
 use russ_internal::{CssValue, CssWriter, WriteResult, WriteValue};
 use std::{
@@ -47,18 +48,14 @@ where
 /// <https://www.w3.org/TR/css-values-3/#urls>
 #[derive(Clone, Debug, Eq, Hash, PartialEq, CssValue)]
 #[function]
-pub struct Url(
-    CssString,
-    // TODO allow VDS shortcuts like "*" instead of this
-    #[field(iter, iter_separator = " ")] Vec<UrlModifier>,
-);
+pub struct Url(CssString, Option<Multiple<UrlModifier>>);
 
 impl<T> From<T> for Url
 where
     T: Into<CssString>,
 {
     fn from(v: T) -> Self {
-        Self(v.into(), Vec::new())
+        Self(v.into(), None)
     }
 }
 
